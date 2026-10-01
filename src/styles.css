@@ -704,6 +704,63 @@ main {
 
 .hero-chart-price-block {
   text-align: right;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.hero-price-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.live-pulse-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.live-pulse-badge.paused {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: pulseDot 1.4s infinite ease-in-out;
+}
+
+.live-pulse-badge.paused .live-dot {
+  background: #94a3b8;
+  animation: none;
+}
+
+@keyframes pulseDot {
+  0% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.9);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
 }
 
 .hero-price-badge {
@@ -714,7 +771,6 @@ main {
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 14px;
-  margin-bottom: 4px;
 }
 
 .hero-price-badge.positive {
@@ -728,10 +784,21 @@ main {
 }
 
 .hero-price-val {
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: -0.5px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.6px;
   display: block;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.hero-price-val.flash-up {
+  color: #059669;
+  transform: translateY(-1px);
+}
+
+.hero-price-val.flash-down {
+  color: #dc2626;
+  transform: translateY(1px);
 }
 
 .hero-last-update {
@@ -739,10 +806,49 @@ main {
   color: var(--text-muted);
 }
 
+.hero-chart-stats-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin: 14px 0 16px 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-item span {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.stat-item b {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-top: 1px;
+}
+
+.chart-toolbar-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
 .timeframe-pill-bar {
   display: flex;
-  gap: 8px;
-  margin-bottom: 22px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -750,10 +856,12 @@ main {
   border: 1px solid var(--line);
   background: #ffffff;
   color: var(--text-muted);
-  padding: 6px 14px;
+  padding: 5px 12px;
   border-radius: 20px;
   font-size: 11px;
   font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .time-pill:hover {
@@ -767,9 +875,159 @@ main {
   color: #ffffff;
 }
 
+.chart-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-mode-pill {
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.chart-mode-pill.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.stream-ctrl-btn {
+  border: 1px solid var(--line);
+  background: #ffffff;
+  color: var(--text-muted);
+  padding: 5px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stream-ctrl-btn:hover {
+  background: #f1f5f9;
+  color: var(--text-main);
+}
+
 .hero-line-chart {
-  height: 250px;
+  height: 270px;
   width: 100%;
+}
+
+/* Zerodha Kite Style Level 2 Market Depth */
+.market-depth-panel {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.depth-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.depth-header h4 {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.depth-ratio-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.depth-ratio-bar {
+  width: 120px;
+  height: 6px;
+  border-radius: 4px;
+  background: #fecaca;
+  overflow: hidden;
+  display: flex;
+}
+
+.depth-ratio-fill {
+  background: #93c5fd;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.depth-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.depth-col table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.depth-col th {
+  padding: 4px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+}
+
+.depth-col td {
+  padding: 4px 6px;
+  font-weight: 500;
+}
+
+.depth-col.bids th:last-child,
+.depth-col.bids td:last-child {
+  color: #2563eb;
+  font-weight: 700;
+  text-align: right;
+}
+
+.depth-col.bids td:nth-child(1),
+.depth-col.bids td:nth-child(2) {
+  color: #64748b;
+}
+
+.depth-col.asks th:first-child,
+.depth-col.asks td:first-child {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.depth-col.asks td:nth-child(2),
+.depth-col.asks td:nth-child(3) {
+  color: #64748b;
+  text-align: right;
+}
+
+.depth-col tfoot td {
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+  font-size: 11px;
 }
 
 .watchlist-card {
