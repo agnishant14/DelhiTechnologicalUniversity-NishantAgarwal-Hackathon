@@ -4,6 +4,8 @@ import path from "node:path";
 import { z } from "zod";
 import { RiskService, ServiceError } from "./service";
 import { documentSchema } from "./validation";
+import financialDatasetRaw from "../data/financial_dataset.json";
+import type { DatasetItem, DatasetQueryResponse } from "../shared/types";
 
 export function createApp(service: RiskService) {
   const app = express();
@@ -39,6 +41,64 @@ export function createApp(service: RiskService) {
   app.get("/api/dashboard", (_req, res) => res.json(service.dashboard()));
   app.get("/api/signals", (_req, res) => res.json(service.dashboard().signals));
   app.get("/api/market-flow", (_req, res) => res.json(service.marketFlow()));
+  app.get("/api/dataset", (req, res) => {
+    const q =
+      typeof req.query.q === "string"
+        ? req.query.q.toLowerCase()
+        : typeof req.query.search === "string"
+          ? req.query.search.toLowerCase()
+          : "";
+    const datasetFilter =
+      typeof req.query.dataset === "string"
+        ? req.query.dataset.toLowerCase()
+        : typeof req.query.source === "string"
+          ? req.query.source.toLowerCase()
+          : "";
+    const sentimentFilter =
+      typeof req.query.sentiment === "string"
+        ? req.query.sentiment.toLowerCase()
+        : "";
+    const limit = Math.min(
+      Math.max(parseInt(String(req.query.limit || "50"), 10) || 50, 1),
+      200,
+    );
+    const offset = Math.max(
+      parseInt(String(req.query.offset || "0"), 10) || 0,
+      0,
+    );
+
+    const records = financialDatasetRaw as unknown as DatasetItem[];
+    let filtered = records;
+    if (q) {
+      filtered = filtered.filter(
+        (r) =>
+          r.text.toLowerCase().includes(q) ||
+          r.sourceName.toLowerCase().includes(q) ||
+          r.dataset.toLowerCase().includes(q),
+      );
+    }
+    if (datasetFilter && datasetFilter !== "all") {
+      filtered = filtered.filter(
+        (r) =>
+          r.dataset.toLowerCase().includes(datasetFilter) ||
+          r.sourceKind.toLowerCase().includes(datasetFilter),
+      );
+    }
+    if (sentimentFilter && sentimentFilter !== "all") {
+      filtered = filtered.filter(
+        (r) => r.sentimentGroundTruth?.toLowerCase() === sentimentFilter,
+      );
+    }
+
+    const payload: DatasetQueryResponse = {
+      total: records.length,
+      filteredCount: filtered.length,
+      limit,
+      offset,
+      records: filtered.slice(offset, offset + limit),
+    };
+    res.json(payload);
+  });
   app.get("/api/export", (_req, res) =>
     res
       .attachment(`signaldesk-${service.mode}.json`)
