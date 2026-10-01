@@ -12,6 +12,7 @@ test-results/
 data/*
 !data/demo.json
 !data/sources.json
+!data/financial_dataset.json
 *.sqlite
 *.sqlite-*
 *.db
