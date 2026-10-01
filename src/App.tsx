@@ -842,44 +842,62 @@ export default function App() {
             <div className="investio-top-grid">
               <div className="left-stack">
                 <div className="investio-card greeting-card">
-                  <h2>Hello Nishant, welcome back to GoRisk.</h2>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div className="greeting-card-info">
+                    <div className="greeting-badge-row">
+                      <span className="live-status-dot" />
+                      <span>
+                        NLP Risk Engine · {data?.mode === "live" ? "Live Feeds Active" : "Demo Replay"}
+                      </span>
+                    </div>
+                    <h2>Hello Nishant, welcome back to GoRisk.</h2>
+                    <p className="greeting-subtitle">
+                      AI sentiment surveillance driving Module A tactical allocation &amp; Module B stress testing.
+                    </p>
+                  </div>
+
+                  <div className="greeting-actions-grid">
                     <button
-                      className="btn-secondary-pill"
+                      className="greeting-action-btn primary"
                       onClick={() => void (data?.mode === "demo" ? replay() : refresh())}
                       disabled={busy}
+                      title={data?.mode === "demo" ? "Replay next event scenario" : "Sync live financial feeds"}
                     >
                       {pending ? (
                         <LoaderCircle className="spin" size={13} />
                       ) : (
-                        <span>&lt;&gt;</span>
+                        <Play size={13} />
                       )}
                       <span>
-                        {data?.mode === "demo" ? "Run Next Event" : "Sync with Feeds"}
+                        {data?.mode === "demo" ? "Run Next Event" : "Sync Feeds"}
                       </span>
                     </button>
+
                     <button
-                      className="btn-secondary-pill"
+                      className="greeting-action-btn"
                       onClick={() => void switchMode()}
                       disabled={busy}
+                      title="Toggle between Live Feeds and Demo Replay"
                     >
-                      {data?.mode === "live" ? "Demo Mode" : "Live Feeds"}
+                      <RefreshCw size={13} />
+                      <span>{data?.mode === "live" ? "Demo Mode" : "Live Feeds"}</span>
                     </button>
+
                     <button
-                      className="btn-secondary-pill"
+                      className="greeting-action-btn dataset"
                       onClick={() => setShowDatasetModal(true)}
-                      style={{ background: "#eff6ff", borderColor: "#bfdbfe", color: "#1d4ed8" }}
+                      title="Explore Hugging Face & Kaggle benchmark records"
                     >
                       <Database size={13} />
-                      <span>HF &amp; Kaggle Dataset (920+)</span>
+                      <span>Dataset (920+)</span>
                     </button>
+
                     <button
-                      className="btn-secondary-pill"
+                      className="greeting-action-btn sandbox"
                       onClick={() => setShowWhatIfModal(true)}
-                      style={{ background: "#fef3c7", borderColor: "#fde68a", color: "#b45309" }}
+                      title="Interactive counterfactual simulation with Explainable AI token attribution"
                     >
                       <Sparkles size={13} />
-                      <span>What-If Sandbox (XAI)</span>
+                      <span>What-If (XAI)</span>
                     </button>
                   </div>
                 </div>
