@@ -1,0 +1,122 @@
+[
+  {
+    "id": "demo-01",
+    "text": "Apple reports record quarterly revenue as iPhone demand beats expectations.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-02",
+    "text": "Microsoft Azure growth is strong. Enterprise demand looks bullish to me.",
+    "sourceKind": "social"
+  },
+  {
+    "id": "demo-03",
+    "text": "Tesla misses earnings expectations as profit declines and demand weakens.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-04",
+    "text": "NVIDIA launches a new chip as strong demand drives record orders.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-05",
+    "text": "Amazon earnings exceed forecasts with improved profit margins.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-06",
+    "text": "JPMorgan credit losses surge as borrowers default amid a liquidity crisis.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-07",
+    "text": "Google launches a new product. The announcement is scheduled for Monday.",
+    "sourceKind": "social"
+  },
+  {
+    "id": "demo-08",
+    "text": "Exxon Mobil profits decline as oil demand falls and recession fears mount.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-09",
+    "text": "Meta Platforms reports strong revenue growth and higher profits.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-10",
+    "text": "Johnson & Johnson faces a lawsuit over a major product recall.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-11",
+    "text": "I am optimistic about NVIDIA. Record growth and strong demand beat expectations.",
+    "sourceKind": "social"
+  },
+  {
+    "id": "demo-12",
+    "text": "Tesla is disappointing. Weak sales and mounting losses make me bearish.",
+    "sourceKind": "social"
+  },
+  {
+    "id": "demo-13",
+    "text": "New export restrictions threaten NVIDIA sales as geopolitical tensions intensify.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-14",
+    "text": "Apple announces an acquisition to strengthen its services business.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-15",
+    "text": "Microsoft faces a massive cloud outage affecting enterprise customers nationwide.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-16",
+    "text": "JPMorgan reports improved earnings and strong growth after restructuring.",
+    "sourceKind": "social"
+  },
+  {
+    "id": "demo-17",
+    "text": "Exxon Mobil sees profits surge following a sharp increase in oil prices.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-18",
+    "text": "The Federal Reserve raises interest rates as inflation accelerates.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-19",
+    "text": "Amazon faces an antitrust investigation and a possible regulatory fine.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-20",
+    "text": "Johnson & Johnson unveils a new treatment with strong clinical results.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-21",
+    "text": "Meta Platforms earnings plunge as advertising revenue misses expectations.",
+    "sourceKind": "social"
+  },
+  {
+    "id": "demo-22",
+    "text": "Google reports record profits and raises its revenue guidance.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-23",
+    "text": "Tesla announces improved margins and strong quarterly earnings growth.",
+    "sourceKind": "news"
+  },
+  {
+    "id": "demo-24",
+    "text": "Apple faces supply chain delays. I am worried about weak demand and declining sales.",
+    "sourceKind": "social"
+  }
+]
