@@ -18,13 +18,11 @@ The prototype implements the unified AI/NLP Risk Engine and **Module A: Tactical
 
 The dashboard connects each headline to its structured signal and allocation history. It is a research prototype: market impact is heuristic, allocations are simulated, and no trades are executed.
 
-![SignalDesk dashboard with fictional demo signals](docs/dashboard.jpg)
-
 ## 2. Architecture & Tech Stack
 
 ![SignalDesk architecture and data flow](docs/architecture.png)
 
-[High-resolution diagram](docs/architecture.png) · [Editable SVG](docs/architecture.svg)
+[High-resolution diagram](docs/architecture.png)
 
 | Component   | Implementation                                            |
 | ----------- | --------------------------------------------------------- |
@@ -72,7 +70,7 @@ Positive sentiment raises the raw target; negative sentiment lowers it. Normaliz
 ## 3. Dataset Used
 
 - **Synthetic demo:** [`data/demo.json`](data/demo.json) contains all 24 built-in scenarios: 17 news-style headlines and 7 social-style posts. The application reads this JSON file directly. These are original fictional inputs created with AI assistance, not historical news or actual posts.
-- **Provenance:** [`data/sources.json`](data/sources.json) records provider URLs, query coverage, access assumptions, and the pinned model. [`data/README.md`](data/README.md) describes the fields and simulation timestamps.
+- **Provenance:** [`data/sources.json`](data/sources.json) records provider URLs, query coverage, access assumptions, and the pinned model. Each demo record contains an ID, text, and source type; simulation timestamps are assigned at runtime.
 - **Live news:** Google News RSS by default; GDELT is available as an alternative.
 - **Live social data:** Hacker News story titles through Algolia. The initial query focuses on NVIDIA and does not represent all companies equally.
 - **Portfolio:** Ten synthetic positions use real public company names. Starting weights are 10% each; no real account, customer, transaction, or confidential client data is used.
