@@ -6,6 +6,12 @@ import { RiskService, ServiceError } from "./service";
 import { documentSchema } from "./validation";
 import financialDatasetRaw from "../data/financial_dataset.json";
 import type { DatasetItem, DatasetQueryResponse } from "../shared/types";
+import {
+  computeCreditRatings,
+  computeContagion,
+  computeValueAtRisk,
+  simulateWhatIf,
+} from "./riskAnalytics";
 
 export function createApp(service: RiskService) {
   const app = express();
@@ -41,6 +47,29 @@ export function createApp(service: RiskService) {
   app.get("/api/dashboard", (_req, res) => res.json(service.dashboard()));
   app.get("/api/signals", (_req, res) => res.json(service.dashboard().signals));
   app.get("/api/market-flow", (_req, res) => res.json(service.marketFlow()));
+  app.get("/api/credit-ratings", (_req, res) => {
+    const signals = service.dashboard().signals;
+    res.json(computeCreditRatings(signals));
+  });
+  app.get("/api/contagion", (_req, res) => {
+    const signals = service.dashboard().signals;
+    res.json(computeContagion(signals));
+  });
+  app.get("/api/var", (_req, res) => {
+    const signals = service.dashboard().signals;
+    res.json(computeValueAtRisk(signals));
+  });
+  app.post("/api/simulate-what-if", async (req, res) => {
+    const { text } = z
+      .object({ text: z.string().min(3).max(6000) })
+      .parse(req.body);
+    const result = await simulateWhatIf(
+      text,
+      service.engine,
+      service.dashboard().holdings,
+    );
+    res.json(result);
+  });
   app.get("/api/dataset", (req, res) => {
     const q =
       typeof req.query.q === "string"
