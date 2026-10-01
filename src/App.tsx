@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type FormEvent,
@@ -30,6 +31,7 @@ import {
   Mail,
   MessageSquare,
   Newspaper,
+  Pause,
   Play,
   Plus,
   Radio,
@@ -44,7 +46,11 @@ import {
   Zap,
 } from "lucide-react";
 import {
+  Area,
+  AreaChart,
+  Bar,
   CartesianGrid,
+  ComposedChart,
   Line,
   LineChart,
   ReferenceLine,
@@ -62,6 +68,14 @@ import {
   type Signal,
   type Ticker,
 } from "../shared/types";
+import {
+  generateInitialTicks,
+  generateNextTick,
+  generateMarketDepth,
+  BASE_STOCK_PRICES,
+  type MarketTick,
+  type StockLiveState,
+} from "./liveMarket";
 
 type View =
   | "overview"
@@ -362,7 +376,10 @@ export default function App() {
   const [pending, setPending] = useState("");
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
   const [selectedStock, setSelectedStock] = useState<Ticker>("AAPL");
-  const [activeTimeframe, setActiveTimeframe] = useState("1 Week");
+  const [activeTimeframe, setActiveTimeframe] = useState("1 Day");
+  const [chartMode, setChartMode] = useState<"price" | "weight">("price");
+  const [isStreaming, setIsStreaming] = useState(true);
+  const [showDepth, setShowDepth] = useState(true);
   const [showBalance, setShowBalance] = useState(true);
   const [analyze, setAnalyze] = useState(false);
   const [text, setText] = useState("");
@@ -371,6 +388,28 @@ export default function App() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [highImpactOnly, setHighImpactOnly] = useState(false);
   const [selectedStressScenario, setSelectedStressScenario] = useState(0);
+
+  const [liveStocks, setLiveStocks] = useState<Record<string, StockLiveState>>(() => {
+    const init: Record<string, StockLiveState> = {};
+    for (const stk of STOCKS) {
+      const { ticks, openPrice } = generateInitialTicks(stk.ticker, "1D", 0);
+      const last = ticks[ticks.length - 1];
+      init[stk.ticker] = {
+        ticker: stk.ticker,
+        price: last.price,
+        prevPrice: last.price,
+        openPrice,
+        highPrice: Math.max(...ticks.map((t) => t.high)),
+        lowPrice: Math.min(...ticks.map((t) => t.low)),
+        dayChange: Number((last.price - openPrice).toFixed(2)),
+        dayChangePct: Number((((last.price - openPrice) / openPrice) * 100).toFixed(2)),
+        volume: ticks.reduce((acc, t) => acc + t.volume, 0),
+        flash: null,
+        history: ticks,
+      };
+    }
+    return init;
+  });
 
   const load = useCallback(async () => {
     try {
@@ -460,6 +499,152 @@ export default function App() {
       sentiment: 0,
       signalCount: 0,
     };
+
+  const activeStockState = liveStocks[selectedStock] ?? {
+    ticker: selectedStock,
+    price: BASE_STOCK_PRICES[selectedStock] ?? 150,
+    prevPrice: BASE_STOCK_PRICES[selectedStock] ?? 150,
+    openPrice: BASE_STOCK_PRICES[selectedStock] ?? 150,
+    highPrice: (BASE_STOCK_PRICES[selectedStock] ?? 150) * 1.01,
+    lowPrice: (BASE_STOCK_PRICES[selectedStock] ?? 150) * 0.99,
+    dayChange: 0,
+    dayChangePct: 0,
+    volume: 120000,
+    flash: null,
+    history: [],
+  };
+
+  const activeSentiment =
+    data?.signals?.find((s) => s.tickers.includes(selectedStock))?.sentiment ?? 0;
+
+  const marketDepth = useMemo(() => {
+    return generateMarketDepth(activeStockState.price, activeSentiment);
+  }, [activeStockState.price, activeSentiment]);
+
+  useEffect(() => {
+    if (!isStreaming) return;
+    const interval = setInterval(() => {
+      setLiveStocks((prev) => {
+        const next = { ...prev };
+        const curStock = next[selectedStock];
+        if (curStock && curStock.history.length > 0) {
+          const lastTick = curStock.history[curStock.history.length - 1];
+          const matchingSignals =
+            data?.signals?.filter((s) => s.tickers.includes(selectedStock)) ?? [];
+          const latestSignal = matchingSignals[0];
+          const sentiment = latestSignal ? latestSignal.sentiment : 0;
+          const impact = latestSignal ? latestSignal.impact : 4;
+
+          const nextTick = generateNextTick(
+            lastTick,
+            sentiment,
+            impact,
+            curStock.history.map((h) => h.price),
+          );
+
+          const flash =
+            nextTick.price > curStock.price
+              ? "up"
+              : nextTick.price < curStock.price
+                ? "down"
+                : null;
+          const newHigh = Math.max(curStock.highPrice, nextTick.high);
+          const newLow = Math.min(curStock.lowPrice, nextTick.low);
+          const change = Number((nextTick.price - curStock.openPrice).toFixed(2));
+          const changePct = Number(
+            ((change / curStock.openPrice) * 100).toFixed(2),
+          );
+
+          next[selectedStock] = {
+            ...curStock,
+            prevPrice: curStock.price,
+            price: nextTick.price,
+            highPrice: newHigh,
+            lowPrice: newLow,
+            dayChange: change,
+            dayChangePct: changePct,
+            volume: curStock.volume + nextTick.volume,
+            flash,
+            history: [...curStock.history.slice(-45), nextTick],
+          };
+        }
+
+        for (const stk of STOCKS) {
+          if (stk.ticker === selectedStock) continue;
+          if (Math.random() > 0.45) continue;
+          const bgStock = next[stk.ticker];
+          if (bgStock && bgStock.history.length > 0) {
+            const last = bgStock.history[bgStock.history.length - 1];
+            const tick = generateNextTick(
+              last,
+              0,
+              3,
+              bgStock.history.map((h) => h.price),
+            );
+            const change = Number((tick.price - bgStock.openPrice).toFixed(2));
+            const changePct = Number(
+              ((change / bgStock.openPrice) * 100).toFixed(2),
+            );
+            next[stk.ticker] = {
+              ...bgStock,
+              prevPrice: bgStock.price,
+              price: tick.price,
+              dayChange: change,
+              dayChangePct: changePct,
+              volume: bgStock.volume + tick.volume,
+              flash:
+                tick.price > bgStock.price
+                  ? "up"
+                  : tick.price < bgStock.price
+                    ? "down"
+                    : null,
+              history: [...bgStock.history.slice(-30), tick],
+            };
+          }
+        }
+
+        return next;
+      });
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, [isStreaming, selectedStock, data?.signals]);
+
+  useEffect(() => {
+    const cur = liveStocks[selectedStock];
+    if (cur?.flash) {
+      const t = setTimeout(() => {
+        setLiveStocks((prev) => ({
+          ...prev,
+          [selectedStock]: { ...prev[selectedStock], flash: null },
+        }));
+      }, 450);
+      return () => clearTimeout(t);
+    }
+  }, [liveStocks, selectedStock]);
+
+  const handleTimeframeChange = (tf: string) => {
+    setActiveTimeframe(tf);
+    const matchingSignals =
+      data?.signals?.filter((s) => s.tickers.includes(selectedStock)) ?? [];
+    const sentiment = matchingSignals[0]?.sentiment ?? 0;
+    const { ticks, openPrice } = generateInitialTicks(selectedStock, tf, sentiment);
+    const last = ticks[ticks.length - 1];
+    setLiveStocks((prev) => ({
+      ...prev,
+      [selectedStock]: {
+        ...prev[selectedStock],
+        price: last.price,
+        prevPrice: last.price,
+        openPrice,
+        highPrice: Math.max(...ticks.map((t) => t.high)),
+        lowPrice: Math.min(...ticks.map((t) => t.low)),
+        dayChange: Number((last.price - openPrice).toFixed(2)),
+        dayChangePct: Number((((last.price - openPrice) / openPrice) * 100).toFixed(2)),
+        history: ticks,
+      },
+    }));
+  };
 
   const stockDelta =
     ((currentHolding.weight - currentHolding.previousWeight) * 100);
@@ -790,12 +975,18 @@ export default function App() {
                     price: 150,
                     initial: stk.ticker[0],
                   };
-                  const delta = (holding.weight - holding.previousWeight) * 100;
+                  const live = liveStocks[stk.ticker];
+                  const livePrice = live ? live.price : meta.price;
+                  const liveDelta = live
+                    ? live.dayChangePct
+                    : (holding.weight - holding.previousWeight) * 100;
                   const isSelected = selectedStock === stk.ticker;
-                  const historyVals =
-                    data?.history.map((s) => s.weights[stk.ticker] ?? 0.1) ?? [
-                      0.1, 0.1,
-                    ];
+                  const sparklineVals =
+                    live && live.history.length > 2
+                      ? live.history.map((t) => t.price)
+                      : data?.history.map((s) => s.weights[stk.ticker] ?? 0.1) ?? [
+                          0.1, 0.1,
+                        ];
 
                   return (
                     <div
@@ -816,28 +1007,28 @@ export default function App() {
                           </div>
                         </div>
                         <MiniSparkline
-                          values={historyVals}
-                          positive={delta >= -0.005}
+                          values={sparklineVals}
+                          positive={liveDelta >= -0.005}
                         />
                       </div>
                       <div className="portfolio-card-metrics">
                         <div className="portfolio-metric-row">
-                          <span>Total Shares</span>
-                          <b>${meta.price.toFixed(2)}</b>
+                          <span>Live Price</span>
+                          <b>${livePrice.toFixed(2)}</b>
                         </div>
                         <div className="portfolio-metric-row">
-                          <span>Total Return</span>
+                          <span>Day Return</span>
                           <span
                             className={`metric-return ${
-                              delta > 0.005
+                              liveDelta > 0.005
                                 ? "positive"
-                                : delta < -0.005
+                                : liveDelta < -0.005
                                   ? "negative"
                                   : "neutral"
                             }`}
                           >
-                            {delta >= 0 ? "+" : ""}
-                            {delta.toFixed(2)}% {delta >= 0 ? "↑" : "↓"}
+                            {liveDelta >= 0 ? "+" : ""}
+                            {liveDelta.toFixed(2)}% {liveDelta >= 0 ? "↑" : "↓"}
                           </span>
                         </div>
                       </div>
@@ -862,109 +1053,454 @@ export default function App() {
                         {STOCK_META[selectedStock]?.initial ?? selectedStock[0]}
                       </span>
                       <div className="hero-stock-titles">
-                        <h3>
-                          {STOCK_META[selectedStock]?.name ?? selectedStock} inc
-                        </h3>
-                        <span>{selectedStock}</span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <h3>
+                            {STOCK_META[selectedStock]?.name ?? selectedStock}
+                          </h3>
+                          <span
+                            className={`live-pulse-badge ${!isStreaming ? "paused" : ""}`}
+                          >
+                            <span className="live-dot" />
+                            {isStreaming ? "LIVE STREAM" : "PAUSED"}
+                          </span>
+                        </div>
+                        <span>{selectedStock} · S&P Large-Cap</span>
                       </div>
                     </div>
                     <div className="hero-chart-price-block">
-                      <div
-                        className={`hero-price-badge ${
-                          stockDelta >= -0.005 ? "positive" : "negative"
-                        }`}
-                      >
-                        {stockDelta >= 0 ? "+" : ""}
-                        {stockDelta.toFixed(2)}% {stockDelta >= 0 ? "↑" : "↓"}
+                      <div className="hero-price-row">
+                        <div
+                          className={`hero-price-badge ${
+                            activeStockState.dayChange >= 0 ? "positive" : "negative"
+                          }`}
+                        >
+                          {activeStockState.dayChange >= 0 ? "+" : ""}
+                          ${activeStockState.dayChange.toFixed(2)} ({activeStockState.dayChangePct >= 0 ? "+" : ""}
+                          {activeStockState.dayChangePct.toFixed(2)}%) {activeStockState.dayChange >= 0 ? "↑" : "↓"}
+                        </div>
+                        <span
+                          className={`hero-price-val ${
+                            activeStockState.flash ? `flash-${activeStockState.flash}` : ""
+                          }`}
+                        >
+                          ${activeStockState.price.toFixed(2)}
+                        </span>
                       </div>
-                      <span className="hero-price-val">
-                        ${(STOCK_META[selectedStock]?.price ?? 150.7).toFixed(2)}
-                      </span>
                       <span className="hero-last-update">
-                        Last update at{" "}
+                        {isStreaming ? "Real-time stochastic feed" : "Stream paused"} ·{" "}
                         {clock(data?.stats.lastUpdated ?? null)}
                       </span>
                     </div>
                   </div>
 
-                  <div className="timeframe-pill-bar">
-                    {[
-                      "1 Day",
-                      "1 Week",
-                      "1 Month",
-                      "3 Month",
-                      "6 Month",
-                      "1 Year",
-                      "5 Year",
-                      "All",
-                    ].map((pill) => (
-                      <button
-                        key={pill}
-                        className={`time-pill ${activeTimeframe === pill ? "active" : ""}`}
-                        onClick={() => setActiveTimeframe(pill)}
+                  <div className="hero-chart-stats-strip">
+                    <div className="stat-item">
+                      <span>Day Open</span>
+                      <b>${activeStockState.openPrice.toFixed(2)}</b>
+                    </div>
+                    <div className="stat-item">
+                      <span>Day High</span>
+                      <b>${activeStockState.highPrice.toFixed(2)}</b>
+                    </div>
+                    <div className="stat-item">
+                      <span>Day Low</span>
+                      <b>${activeStockState.lowPrice.toFixed(2)}</b>
+                    </div>
+                    <div className="stat-item">
+                      <span>Volume</span>
+                      <b>{(activeStockState.volume / 1000).toFixed(1)}k</b>
+                    </div>
+                    <div className="stat-item">
+                      <span>VWAP</span>
+                      <b>
+                        $
+                        {(
+                          (activeStockState.highPrice +
+                            activeStockState.lowPrice +
+                            activeStockState.price) /
+                          3
+                        ).toFixed(2)}
+                      </b>
+                    </div>
+                    <div className="stat-item">
+                      <span>FinBERT Bias</span>
+                      <b
+                        style={{
+                          color:
+                            activeSentiment > 0.15
+                              ? "#059669"
+                              : activeSentiment < -0.15
+                                ? "#dc2626"
+                                : "#64748b",
+                        }}
                       >
-                        {pill}
+                        {activeSentiment > 0.15
+                          ? "Bullish +0.4%"
+                          : activeSentiment < -0.15
+                            ? "Bearish -0.4%"
+                            : "Neutral Drift"}
+                      </b>
+                    </div>
+                  </div>
+
+                  <div className="chart-toolbar-row">
+                    <div className="timeframe-pill-bar">
+                      {[
+                        "1 Day",
+                        "1 Week",
+                        "1 Month",
+                        "3 Month",
+                        "1 Year",
+                        "All",
+                      ].map((pill) => (
+                        <button
+                          key={pill}
+                          className={`time-pill ${activeTimeframe === pill ? "active" : ""}`}
+                          onClick={() => handleTimeframeChange(pill)}
+                        >
+                          {pill === "1 Day" ? "1D (Live)" : pill}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="chart-actions-group">
+                      <button
+                        className={`chart-mode-pill ${chartMode === "price" ? "active" : ""}`}
+                        onClick={() => setChartMode("price")}
+                        title="Live stock market price and volume"
+                      >
+                        <TrendingUp size={12} />
+                        Price ($)
                       </button>
-                    ))}
+                      <button
+                        className={`chart-mode-pill ${chartMode === "weight" ? "active" : ""}`}
+                        onClick={() => setChartMode("weight")}
+                        title="Tactical index allocation history"
+                      >
+                        <Layers3 size={12} />
+                        Weight (%)
+                      </button>
+                      <button
+                        className="stream-ctrl-btn"
+                        onClick={() => setIsStreaming(!isStreaming)}
+                        title={isStreaming ? "Pause live stream" : "Resume live stream"}
+                      >
+                        {isStreaming ? (
+                          <Pause size={12} />
+                        ) : (
+                          <Play size={12} fill="currentColor" />
+                        )}
+                        {isStreaming ? "Pause" : "Live"}
+                      </button>
+                      <button
+                        className={`stream-ctrl-btn ${showDepth ? "active" : ""}`}
+                        onClick={() => setShowDepth(!showDepth)}
+                        title="Toggle Level 2 Market Depth (Order Book)"
+                      >
+                        <BarChart3 size={12} />
+                        Depth
+                      </button>
+                    </div>
                   </div>
 
                   <div className="hero-line-chart">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart
-                        data={stockHistoryData}
-                        margin={{ top: 10, right: 10, bottom: 0, left: -26 }}
-                      >
-                        <CartesianGrid
-                          stroke="#f1f3f7"
-                          strokeDasharray="3 3"
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey="tick"
-                          tick={{ fill: "#94a3b8", fontSize: 11 }}
-                          tickLine={false}
-                          axisLine={false}
-                        />
-                        <YAxis
-                          domain={[0, 22]}
-                          ticks={[0, 5, 10, 15, 20]}
-                          tickFormatter={(v) => `${v}%`}
-                          tick={{ fill: "#94a3b8", fontSize: 11 }}
-                          tickLine={false}
-                          axisLine={false}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            background: "#0f172a",
-                            border: "none",
-                            borderRadius: 12,
-                            color: "#ffffff",
-                            fontSize: 12,
-                            padding: "8px 12px",
-                            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.2)",
-                          }}
-                          labelFormatter={(v) => `21 Sept on ${v}.00`}
-                          formatter={(v) => [
-                            `$${Number(v) * 12.8},90 (${v}%)`,
-                            "Weight",
-                          ]}
-                        />
-                        <ReferenceLine
-                          y={10}
-                          stroke="#cbd5e1"
-                          strokeDasharray="4 4"
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="val"
-                          stroke="#14b8a6"
-                          strokeWidth={2.8}
-                          dot={false}
-                          activeDot={{ r: 5, strokeWidth: 2, stroke: "#ffffff" }}
-                        />
-                      </LineChart>
+                      {chartMode === "price" ? (
+                        <ComposedChart
+                          data={activeStockState.history}
+                          margin={{ top: 10, right: 10, bottom: 0, left: 10 }}
+                        >
+                          <defs>
+                            <linearGradient
+                              id="liveAreaGrad"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="5%"
+                                stopColor={
+                                  activeStockState.dayChange >= 0
+                                    ? "#10b981"
+                                    : "#ef4444"
+                                }
+                                stopOpacity={0.25}
+                              />
+                              <stop
+                                offset="95%"
+                                stopColor={
+                                  activeStockState.dayChange >= 0
+                                    ? "#10b981"
+                                    : "#ef4444"
+                                }
+                                stopOpacity={0.0}
+                              />
+                            </linearGradient>
+                            <linearGradient
+                              id="volGrad"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="0%"
+                                stopColor="#94a3b8"
+                                stopOpacity={0.3}
+                              />
+                              <stop
+                                offset="100%"
+                                stopColor="#94a3b8"
+                                stopOpacity={0.05}
+                              />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            stroke="#f1f3f7"
+                            strokeDasharray="3 3"
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="time"
+                            tick={{ fill: "#94a3b8", fontSize: 10 }}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <YAxis
+                            yAxisId="price"
+                            domain={["auto", "auto"]}
+                            tickFormatter={(v) => `$${Number(v).toFixed(1)}`}
+                            tick={{ fill: "#94a3b8", fontSize: 11 }}
+                            tickLine={false}
+                            axisLine={false}
+                            orientation="right"
+                          />
+                          <YAxis
+                            yAxisId="vol"
+                            domain={[0, "dataMax * 3.5"]}
+                            hide
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              background: "#0f172a",
+                              border: "none",
+                              borderRadius: 12,
+                              color: "#ffffff",
+                              fontSize: 12,
+                              padding: "10px 14px",
+                              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.2)",
+                            }}
+                            labelFormatter={(label) => `Time: ${label}`}
+                            formatter={(value, name) => [
+                              name === "price"
+                                ? `$${Number(value).toFixed(2)}`
+                                : name === "ma"
+                                  ? `$${Number(value).toFixed(2)}`
+                                  : `${Number(value).toLocaleString()} shares`,
+                              name === "price"
+                                ? "Live Price"
+                                : name === "ma"
+                                  ? "MA(7)"
+                                  : "Traded Volume",
+                            ]}
+                          />
+                          <Bar
+                            yAxisId="vol"
+                            dataKey="volume"
+                            fill="url(#volGrad)"
+                            radius={[2, 2, 0, 0]}
+                            maxBarSize={10}
+                            isAnimationActive={false}
+                          />
+                          <Area
+                            yAxisId="price"
+                            type="monotone"
+                            dataKey="price"
+                            stroke={
+                              activeStockState.dayChange >= 0
+                                ? "#059669"
+                                : "#dc2626"
+                            }
+                            strokeWidth={2.4}
+                            fill="url(#liveAreaGrad)"
+                            isAnimationActive={false}
+                            activeDot={{
+                              r: 5,
+                              stroke: "#ffffff",
+                              strokeWidth: 2,
+                              fill:
+                                activeStockState.dayChange >= 0
+                                  ? "#059669"
+                                  : "#dc2626",
+                            }}
+                          />
+                          <Line
+                            yAxisId="price"
+                            type="monotone"
+                            dataKey="ma"
+                            stroke="#6366f1"
+                            strokeWidth={1.5}
+                            strokeDasharray="3 3"
+                            dot={false}
+                            isAnimationActive={false}
+                          />
+                        </ComposedChart>
+                      ) : (
+                        <LineChart
+                          data={stockHistoryData}
+                          margin={{ top: 10, right: 10, bottom: 0, left: -26 }}
+                        >
+                          <CartesianGrid
+                            stroke="#f1f3f7"
+                            strokeDasharray="3 3"
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="tick"
+                            tick={{ fill: "#94a3b8", fontSize: 11 }}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <YAxis
+                            domain={[0, 22]}
+                            ticks={[0, 5, 10, 15, 20]}
+                            tickFormatter={(v) => `${v}%`}
+                            tick={{ fill: "#94a3b8", fontSize: 11 }}
+                            tickLine={false}
+                            axisLine={false}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              background: "#0f172a",
+                              border: "none",
+                              borderRadius: 12,
+                              color: "#ffffff",
+                              fontSize: 12,
+                              padding: "8px 12px",
+                              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.2)",
+                            }}
+                            labelFormatter={(v) => `Snapshot step #${v}`}
+                            formatter={(v) => [
+                              `${Number(v).toFixed(2)}%`,
+                              "Portfolio Weight",
+                            ]}
+                          />
+                          <ReferenceLine
+                            y={10}
+                            stroke="#cbd5e1"
+                            strokeDasharray="4 4"
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="val"
+                            stroke="#14b8a6"
+                            strokeWidth={2.8}
+                            dot={false}
+                            activeDot={{
+                              r: 5,
+                              strokeWidth: 2,
+                              stroke: "#ffffff",
+                            }}
+                          />
+                        </LineChart>
+                      )}
                     </ResponsiveContainer>
                   </div>
+
+                  {showDepth && (
+                    <div className="market-depth-panel">
+                      <div className="depth-header">
+                        <h4>
+                          <Activity size={13} />
+                          Level 2 Market Depth (Live Orders)
+                        </h4>
+                        <div className="depth-ratio-wrapper">
+                          <span style={{ color: "#2563eb" }}>
+                            Bids: {marketDepth.totalBuyQty.toLocaleString()}
+                          </span>
+                          <div className="depth-ratio-bar">
+                            <div
+                              className="depth-ratio-fill"
+                              style={{
+                                width: `${(
+                                  (marketDepth.totalBuyQty /
+                                    (marketDepth.totalBuyQty +
+                                      marketDepth.totalSellQty)) *
+                                  100
+                                ).toFixed(0)}%`,
+                              }}
+                            />
+                          </div>
+                          <span style={{ color: "#dc2626" }}>
+                            Asks: {marketDepth.totalSellQty.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="depth-grid">
+                        <div className="depth-col bids">
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Orders</th>
+                                <th>Qty</th>
+                                <th>Bid Price</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {marketDepth.bids.map((b, i) => (
+                                <tr key={i}>
+                                  <td>{b.orders}</td>
+                                  <td>{b.quantity.toLocaleString()}</td>
+                                  <td>${b.price.toFixed(2)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot>
+                              <tr>
+                                <td>Total</td>
+                                <td>
+                                  {marketDepth.totalBuyQty.toLocaleString()}
+                                </td>
+                                <td>—</td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+
+                        <div className="depth-col asks">
+                          <table>
+                            <thead>
+                              <tr>
+                                <th>Ask Price</th>
+                                <th>Qty</th>
+                                <th>Orders</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {marketDepth.asks.map((a, i) => (
+                                <tr key={i}>
+                                  <td>${a.price.toFixed(2)}</td>
+                                  <td>{a.quantity.toLocaleString()}</td>
+                                  <td>{a.orders}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot>
+                              <tr>
+                                <td>—</td>
+                                <td>
+                                  {marketDepth.totalSellQty.toLocaleString()}
+                                </td>
+                                <td>Total</td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="watchlist-card">
@@ -987,14 +1523,9 @@ export default function App() {
                         price: 100,
                         initial: stk.ticker[0],
                       };
-                      const holding = data?.holdings.find(
-                        (h) => h.ticker === stk.ticker,
-                      ) ?? {
-                        weight: 0.1,
-                        previousWeight: 0.1,
-                      };
-                      const delta =
-                        (holding.weight - holding.previousWeight) * 100;
+                      const live = liveStocks[stk.ticker];
+                      const livePrice = live ? live.price : meta.price;
+                      const liveDelta = live ? live.dayChangePct : 0;
                       const isSelected = selectedStock === stk.ticker;
 
                       return (
@@ -1016,18 +1547,24 @@ export default function App() {
                             </div>
                           </div>
                           <div className="watchlist-item-right">
-                            <b>${meta.price.toFixed(2)}</b>
+                            <b
+                              className={
+                                live?.flash ? `flash-${live.flash}` : ""
+                              }
+                            >
+                              ${livePrice.toFixed(2)}
+                            </b>
                             <span
                               className={
-                                delta > 0.005
+                                liveDelta > 0.005
                                   ? "positive"
-                                  : delta < -0.005
+                                  : liveDelta < -0.005
                                     ? "negative"
                                     : "neutral"
                               }
                             >
-                              {delta >= 0 ? "+" : ""}
-                              {delta.toFixed(2)}%
+                              {liveDelta >= 0 ? "+" : ""}
+                              {liveDelta.toFixed(2)}%
                             </span>
                           </div>
                         </div>
