@@ -143,6 +143,62 @@ a {
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* Gooey Nav Component (from swamimalode07/rare-ui) */
+.gooey-nav-container {
+  display: inline-flex;
+  align-items: center;
+}
+
+.gooey-nav-list {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gooey-nav-segment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.06);
+  transition: background-color 0.25s ease;
+}
+
+.gooey-nav-svg {
+  position: absolute;
+  top: 0;
+  right: 100%;
+  height: 100%;
+  pointer-events: none;
+  color: rgba(255, 255, 255, 0.06);
+}
+
+.gooey-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.gooey-nav-btn:hover {
+  color: #ffffff;
+}
+
+.gooey-nav-btn[data-active="true"] {
+  color: #ffffff;
+  font-weight: 600;
+}
+
 .nav-right {
   display: flex;
   align-items: center;
