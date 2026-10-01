@@ -10,7 +10,8 @@ import { RiskEngine, signalId } from "./engine";
 import { Store } from "./store";
 import { equalWeights, holdings, POLICY, rebalance } from "./portfolio";
 import { demoDocument, SCENARIOS } from "./demo";
-import { fetchSources, gdeltSource, sources, type Source } from "./sources";
+import { fetchSources, gdeltSource, sources, defaultSources, type Source } from "./sources";
+import { predictMarketFlow } from "./flow";
 import { documentSchema } from "./validation";
 
 export class ServiceError extends Error {
@@ -34,10 +35,7 @@ export class RiskService {
     adapters?: Source[],
   ) {
     this.mode = store.get("mode") === "live" ? "live" : "demo";
-    this.adapters = adapters ?? [
-      process.env.NEWS_SOURCE === "gdelt" ? gdeltSource : sources[0],
-      sources[1],
-    ];
+    this.adapters = adapters ?? defaultSources;
     this.lastRefresh = Number(store.get("lastRefresh") ?? 0);
     const savedStatuses: SourceStatus[] = JSON.parse(
       store.get("sourceStatuses") ?? "[]",
@@ -221,6 +219,10 @@ export class RiskService {
         position: Number(this.store.get("replayPosition") ?? 0),
         total: SCENARIOS.length,
       },
+      flow: predictMarketFlow(signals),
     };
+  }
+  marketFlow() {
+    return predictMarketFlow(this.signals());
   }
 }
