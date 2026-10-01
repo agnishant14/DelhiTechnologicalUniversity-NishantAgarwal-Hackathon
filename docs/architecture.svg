@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1650" height="980" viewBox="0 0 1650 980">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#91ae84"/></marker></defs>
+<rect width="1650" height="980" fill="#0d1517"/>
+<style>text{font-family:Arial,sans-serif} .title{fill:#edf3e8;font-size:38px;font-weight:700}.head{fill:#e5efdd;font-size:23px;font-weight:700}.body{fill:#a2b49b;font-size:18px}.label{fill:#c3ee86;font-size:14px;letter-spacing:2px}.line{fill:none;stroke:#91ae84;stroke-width:2.5;marker-end:url(#arrow)}</style>
+<text x="50" y="65" class="label">SIGNALDESK / SYSTEM ARCHITECTURE</text>
+<text x="50" y="122" class="title">From text to risk intelligence</text>
+<text x="50" y="161" class="body">S&amp;P Global &amp; Crisil Campus Hackathon 2026 · Nishant Agarwal · Delhi Technological University</text>
+<text x="50" y="220" class="label">01  INPUTS</text>
+<text x="380" y="220" class="label">02  INGESTION</text>
+<text x="790" y="220" class="label">03  UNIFIED RISK ENGINE</text>
+<rect x="50" y="250" width="275" height="105" rx="15" fill="#18241f" stroke="#3a5036" stroke-width="1.5"/>
+<text x="72" y="287" class="head">Financial news</text>
+<text x="72" y="319" class="body">Google News RSS</text>
+<text x="72" y="346" class="body">GDELT alternative</text>
+<rect x="50" y="385" width="275" height="105" rx="15" fill="#18241f" stroke="#3a5036" stroke-width="1.5"/>
+<text x="72" y="422" class="head">Community posts</text>
+<text x="72" y="454" class="body">Hacker News via Algolia</text>
+<text x="72" y="481" class="body">NVIDIA-focused query</text>
+<rect x="50" y="520" width="275" height="105" rx="15" fill="#18241f" stroke="#3a5036" stroke-width="1.5"/>
+<text x="72" y="557" class="head">Demo / manual text</text>
+<text x="72" y="589" class="body">24 fictional scenarios</text>
+<text x="72" y="616" class="body">Clearly labelled input</text>
+<rect x="380" y="285" width="340" height="195" rx="15" fill="#18241f" stroke="#3a5036" stroke-width="1.5"/>
+<text x="402" y="322" class="head">Validate &amp; prepare</text>
+<text x="402" y="354" class="body">Clean text and timestamps</text>
+<text x="402" y="381" class="body">Remove exact duplicates</text>
+<text x="402" y="408" class="body">Preserve source provenance</text>
+<text x="402" y="435" class="body">Coordinate ingestion batches</text>
+<path d="M325 302 H350 V360 H380" class="line"/>
+<path d="M325 437 H350 V392 H380" class="line"/>
+<path d="M325 572 H350 V425 H380" class="line"/>
+<rect x="790" y="250" width="810" height="185" rx="15" fill="#18241f" stroke="#3a5036" stroke-width="1.5"/>
+<text x="812" y="287" class="head">Analyze locally</text>
+<text x="812" y="319" class="body">FinBERT sentiment: P(positive) − P(negative)</text>
+<text x="812" y="346" class="body">Company and ticker matching</text>
+<text x="812" y="373" class="body">Rule-based event classification + impact estimate (1–10)</text>
+<text x="812" y="400" class="body">Explicit lexicon fallback when FinBERT is unavailable</text>
+<path d="M720 380 H755 V340 H790" class="line"/>
+<rect x="790" y="485" width="810" height="100" rx="15" fill="#18241f" stroke="#3a5036" stroke-width="1.5"/>
+<text x="812" y="522" class="head">Structured signal</text>
+<text x="812" y="554" class="body">Text · source · tickers · sentiment · event · impact · explanation</text>
+<path d="M1195 435 V485" class="line"/>
+<text x="50" y="674" class="label">04  MODULE A</text>
+<rect x="50" y="695" width="630" height="190" rx="15" fill="#18241f" stroke="#3a5036" stroke-width="1.5"/>
+<text x="72" y="732" class="head">Tactical index rebalancing</text>
+<text x="72" y="764" class="body">10 US stocks; 24-hour signal window; six-hour decay</text>
+<text x="72" y="791" class="body">Social weight 0.6×; sentiment-based targets</text>
+<text x="72" y="818" class="body">5–20% position bounds; 100% allocated</text>
+<text x="72" y="845" class="body">8% maximum one-way turnover per batch</text>
+<rect x="790" y="695" width="335" height="145" rx="15" fill="#18241f" stroke="#3a5036" stroke-width="1.5"/>
+<text x="812" y="732" class="head">SQLite storage</text>
+<text x="812" y="764" class="body">Signals + weight history</text>
+<text x="812" y="791" class="body">Separate demo / live data</text>
+<text x="812" y="818" class="body">Persistent replay progress</text>
+<path d="M1195 585 V635 H957 V695" class="line"/>
+<path d="M680 773 H790" class="line" marker-start="url(#arrow)"/>
+<text x="698" y="742" class="body">read / save</text>
+<rect x="1190" y="695" width="410" height="105" rx="15" fill="#18241f" stroke="#3a5036" stroke-width="1.5"/>
+<text x="1212" y="732" class="head">Express API</text>
+<text x="1212" y="764" class="body">Validated JSON endpoints</text>
+<path d="M1125 750 H1190" class="line"/>
+<rect x="1190" y="850" width="410" height="95" rx="15" fill="#18241f" stroke="#3a5036" stroke-width="1.5"/>
+<text x="1212" y="887" class="head">React dashboard</text>
+<text x="1212" y="919" class="body">Signals · allocation charts · export</text>
+<path d="M1395 800 V850" class="line"/>
+<text x="790" y="896" class="body">Impact scores are heuristics.</text>
+<text x="790" y="925" class="body">Portfolio allocations are simulated.</text>
+</svg>
