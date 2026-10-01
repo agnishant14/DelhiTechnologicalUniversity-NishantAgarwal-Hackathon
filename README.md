@@ -1,4 +1,4 @@
-# SignalDesk - S&P Global & Crisil Campus Hackathon
+# GoRisk — S&P Global & CRISIL Campus Hackathon
 
 **Candidate Name:** Nishant Agarwal
 
@@ -12,11 +12,11 @@
 
 ## 1. Project Overview / Problem Statement & Approach
 
-Financial news and social conversations arrive as unstructured text. A risk analyst needs to identify the relevant company, understand the sentiment and event, and see how that information could affect a portfolio. SignalDesk brings those steps into one explainable workflow.
+Financial news and social conversations arrive as unstructured text. A risk analyst needs to identify the relevant company, understand the sentiment and event, and see how that information could affect a portfolio. GoRisk brings those steps into one explainable, Zerodha-inspired minimalist workflow.
 
-The prototype implements the unified AI/NLP Risk Engine and **Module A: Tactical Index Rebalancing**. It uses local FinBERT inference for sentiment, explicit rules for event and impact estimates, and a constrained ten-stock mock index. News and community posts enter the same pipeline; a separate fictional dataset makes the demo reproducible without live feeds.
+The platform implements the unified AI/NLP Risk Engine, **Module A: Tactical Index Rebalancing**, **Module B: Strategic Portfolio Stress Testing**, and a novel **AI Predictive Market Flow Engine**. It uses local FinBERT inference for sentiment, explicit rules for event and impact estimates, and a constrained ten-stock mock index alongside a $100M wholesale banking asset book. Multi-source news (Google News, Yahoo Finance, GDELT) and community posts enter the same pipeline; a separate fictional dataset makes the demo reproducible without live feeds.
 
-The dashboard connects each headline to its structured signal and allocation history. It is a research prototype: market impact is heuristic, allocations are simulated, and no trades are executed.
+The dashboard connects each headline to its structured signal, allocation history, order flow forecast, and stress test shocks. It is a research prototype: market impact is heuristic, allocations are simulated, and no live trades are executed.
 
 ## 2. Architecture & Tech Stack
 
@@ -26,11 +26,12 @@ The dashboard connects each headline to its structured signal and allocation his
 
 | Component   | Implementation                                            |
 | ----------- | --------------------------------------------------------- |
-| Interface   | React, TypeScript, Vite, Recharts, Lucide                 |
+| Interface   | React, TypeScript, Vite, Recharts, Lucide (GoStock UI)    |
 | API         | Express 5 with Zod request validation                     |
 | NLP         | Transformers.js, CPU inference, quantized FinBERT         |
+| Market Flow | Rule & statistical AI flow engine predicting liquidity, drift & regimes |
 | Persistence | Node's built-in SQLite; separate demo/live records        |
-| News        | Google News RSS; optional GDELT adapter                   |
+| News        | Google News RSS, Yahoo Finance Live RSS, GDELT adapter    |
 | Social      | Hacker News community-submitted story titles, via Algolia |
 | Testing     | Vitest, Supertest, optional real-model smoke test         |
 
@@ -139,16 +140,17 @@ If FinBERT cannot load, the app shows **Lexicon fallback**, and every affected s
 
 All paths are under `/api`. Error responses are JSON. The local API is intended for one research workspace, without user accounts or authentication.
 
-| Method | Route        | Result                                                            |
-| ------ | ------------ | ----------------------------------------------------------------- |
-| GET    | `/health`    | Startup state and model status                                    |
-| GET    | `/dashboard` | Signals, metrics, holdings, history, sources, and replay progress |
-| GET    | `/signals`   | Signals in the active workspace                                   |
-| GET    | `/export`    | JSON download of the active workspace                             |
-| POST   | `/analyze`   | Analyze and persist a document; rebalance if eligible             |
-| POST   | `/replay`    | Analyze the next two demo scenarios                               |
-| POST   | `/mode`      | Switch with `{"mode":"demo"}` or `{"mode":"live"}`                |
-| POST   | `/refresh`   | Fetch live sources and analyze new documents                      |
+| Method | Route          | Result                                                            |
+| ------ | -------------- | ----------------------------------------------------------------- |
+| GET    | `/health`      | Startup state and model status                                    |
+| GET    | `/dashboard`   | Signals, metrics, holdings, history, sources, flow & replay info  |
+| GET    | `/signals`     | Signals in the active workspace                                   |
+| GET    | `/market-flow` | AI Market flow prediction matrix, regime forecast & drift deltas  |
+| GET    | `/export`      | JSON download of the active workspace                             |
+| POST   | `/analyze`     | Analyze and persist a document; rebalance if eligible             |
+| POST   | `/replay`      | Analyze the next two demo scenarios                               |
+| POST   | `/mode`        | Switch with `{"mode":"demo"}` or `{"mode":"live"}`                |
+| POST   | `/refresh`     | Fetch live sources and analyze new documents                      |
 
 ```sh
 curl http://localhost:3001/api/analyze \
@@ -174,14 +176,15 @@ The optional model smoke test runs actual FinBERT on three synthetic positive/ne
 
 ```text
 server/engine.ts       Sentiment, company matching, event and impact rules
-server/sources.ts      Live news and social adapters
+server/flow.ts         Predictive market flow engine and regime forecast
+server/sources.ts      Live news and social adapters (Google, Yahoo, GDELT, HN)
 server/service.ts      Ingestion, deduplication, replay, and refresh coordination
 server/portfolio.ts    Sentiment aggregation and allocation constraints
 server/store.ts        SQLite persistence
 server/app.ts          HTTP routes and validation errors
 shared/types.ts        Signal contracts and index universe
-src/App.tsx            Interactive dashboard and analysis dialogs
-src/styles.css        Desktop and mobile layouts
+src/App.tsx            Interactive GoStock dashboard, stress test & flow matrix
+src/styles.css        GoStock minimalist theme, cards, and responsive layouts
 tests/                Engine, portfolio, source, and API checks
 scripts/check-model.ts Real-model smoke test
 ```
@@ -199,7 +202,7 @@ For an analyst, the practical benefit is a traceable route from incoming text to
 
 ### Limitations
 
-- Implements the core engine and **Module A**. Module B is not included.
+- Implements the core engine, **Module A (Tactical Index Rebalancer)**, and **Module B (Strategic Wholesale Banking Stress Testing)** alongside the AI Market Flow Predictor.
 - Uses a real pretrained sentiment model; event classification and impact remain documented heuristics without external calibration.
 - Entity matching uses names and aliases, which can be ambiguous. Multiple companies in one document receive the same sentiment; attribution is not entity-specific.
 - English text only; sentiment input truncates at 512 tokens. Sarcasm, negation, competing events, manipulated posts, and domain shifts can produce incorrect scores.
