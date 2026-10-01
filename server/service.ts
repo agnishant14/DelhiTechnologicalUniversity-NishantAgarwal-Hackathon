@@ -6,7 +6,7 @@ import {
   type Signal,
   type SourceStatus,
 } from "../shared/types";
-import { RiskEngine } from "./engine";
+import { RiskEngine, signalId } from "./engine";
 import { Store } from "./store";
 import { equalWeights, holdings, POLICY, rebalance } from "./portfolio";
 import { demoDocument, SCENARIOS } from "./demo";
@@ -38,13 +38,20 @@ export class RiskService {
       process.env.NEWS_SOURCE === "gdelt" ? gdeltSource : sources[0],
       sources[1],
     ];
-    this.statuses = this.adapters.map((s) => ({
-      name: s.name,
-      kind: s.kind,
-      status: "idle",
-      fetched: 0,
-      lastFetched: null,
-    }));
+    this.lastRefresh = Number(store.get("lastRefresh") ?? 0);
+    const savedStatuses: SourceStatus[] = JSON.parse(
+      store.get("sourceStatuses") ?? "[]",
+    );
+    this.statuses = this.adapters.map(
+      (s) =>
+        savedStatuses.find((saved) => saved.name === s.name) ?? {
+          name: s.name,
+          kind: s.kind,
+          status: "idle",
+          fetched: 0,
+          lastFetched: null,
+        },
+    );
   }
   private async exclusive<T>(fn: () => Promise<T>) {
     if (this.busy) throw new ServiceError("An update is already in progress.");
@@ -90,6 +97,8 @@ export class RiskService {
     for (const doc of documents) {
       const parsed = documentSchema.safeParse(doc);
       if (!parsed.success) continue;
+      const id = signalId(parsed.data.text, mode);
+      if (this.store.has(id) || batch.has(id)) continue;
       const signal = await this.engine.analyze(
         { ...parsed.data, isSample: doc.isSample ?? false },
         mode,
@@ -102,6 +111,7 @@ export class RiskService {
     const eligible = added.some(
       (s) =>
         s.tickers.length &&
+        Date.parse(s.publishedAt) <= Date.now() &&
         Date.now() - Date.parse(s.publishedAt) <=
           POLICY.lookbackHours * 3600000,
     );
@@ -161,8 +171,12 @@ export class RiskService {
       );
     return this.exclusive(async () => {
       this.lastRefresh = Date.now();
+      this.store.save([], undefined, { lastRefresh: String(this.lastRefresh) });
       const { documents, statuses } = await fetchSources(this.adapters);
       this.statuses = statuses;
+      this.store.save([], undefined, {
+        sourceStatuses: JSON.stringify(statuses),
+      });
       return this.ingest(documents, "live");
     });
   }

@@ -121,6 +121,7 @@ function Modal({
   }, []);
   return (
     <dialog
+      aria-label={title}
       ref={ref}
       onCancel={close}
       onClick={(e) => {
@@ -868,6 +869,7 @@ function Methodology() {
 export default function App() {
   const [data, setData] = useState<Dashboard | null>(null),
     [view, setView] = useState<View>("overview");
+  const [connectionError, setConnectionError] = useState("");
   const [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [pending, setPending] = useState("");
@@ -877,8 +879,9 @@ export default function App() {
   const load = useCallback(async () => {
     try {
       setData(await api<Dashboard>("dashboard"));
+      setConnectionError("");
     } catch (e) {
-      setError((e as Error).message);
+      setConnectionError((e as Error).message);
     }
   }, []);
   useEffect(() => {
@@ -987,6 +990,8 @@ export default function App() {
             <button
               key={id}
               className={view === id ? "active" : ""}
+              aria-label={name}
+              title={name}
               onClick={() => setView(id)}
             >
               <Icon size={18} />
@@ -1131,11 +1136,17 @@ export default function App() {
               <ArrowRight size={14} />
             </button>
           </div>
-          {error && (
+          {(error || connectionError) && (
             <div className="alert" role="alert">
               <CircleHelp size={17} />
-              <span>{error}</span>
-              <button aria-label="Dismiss error" onClick={() => setError("")}>
+              <span>{error || connectionError}</span>
+              <button
+                aria-label="Dismiss error"
+                onClick={() => {
+                  setError("");
+                  setConnectionError("");
+                }}
+              >
                 <X size={16} />
               </button>
             </div>

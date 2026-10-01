@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import request from "supertest";
 import { RiskEngine } from "../server/engine";
 import { Store } from "../server/store";
@@ -41,6 +41,7 @@ afterEach(() => store.close());
 describe("pipeline API", () => {
   it("seeds both source types and deduplicates without another rebalance", async () => {
     const before = service.dashboard();
+    const analyze = vi.spyOn(service.engine, "analyze");
     expect(new Set(before.signals.map((s) => s.sourceKind))).toEqual(
       new Set(["news", "social"]),
     );
@@ -49,6 +50,7 @@ describe("pipeline API", () => {
       .send({ text: before.signals[0].text })
       .expect(200);
     expect(result.body.added).toBe(0);
+    expect(analyze).not.toHaveBeenCalled();
     expect(service.dashboard().history.length).toBe(before.history.length);
   });
   it("isolates live data, reports partial source failures, and throttles refresh", async () => {
@@ -90,5 +92,51 @@ describe("pipeline API", () => {
     await second.initialize();
     expect(second.dashboard().signals).toHaveLength(14);
     expect(second.dashboard().replay.position).toBe(14);
+  });
+  it("preserves source status and cooldown across restarts", async () => {
+    await service.setMode("live");
+    await service.refresh();
+    const restarted = new RiskService(service.engine, store, [
+      { name: "News test", kind: "news", fetch: async () => [] },
+      { name: "Social test", kind: "social", fetch: async () => [] },
+    ]);
+    await restarted.initialize();
+    expect(restarted.dashboard().mode).toBe("live");
+    expect(restarted.dashboard().sources[1]).toMatchObject({
+      status: "error",
+      error: "Offline",
+    });
+    await expect(restarted.refresh()).rejects.toThrow("once per minute");
+  });
+  it("rejects cross-origin mutations", async () => {
+    await request(createApp(service))
+      .post("/api/replay")
+      .set("Origin", "https://untrusted.example")
+      .send({})
+      .expect(403);
+    expect(service.dashboard().replay.position).toBe(12);
+  });
+  it("serializes concurrent model updates", async () => {
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = service.engine.analyze.bind(service.engine);
+    vi.spyOn(service.engine, "analyze").mockImplementationOnce(
+      async (...args) => {
+        await blocked;
+        return original(...args);
+      },
+    );
+    const first = service.analyze({
+      text: "Apple reports a new earnings record.",
+      sourceKind: "manual",
+      sourceName: "Test",
+      publishedAt: new Date().toISOString(),
+    });
+    await expect(service.replay()).rejects.toThrow("already in progress");
+    release();
+    await first;
+    expect(service.busy).toBe(false);
   });
 });

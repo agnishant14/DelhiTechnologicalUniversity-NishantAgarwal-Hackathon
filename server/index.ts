@@ -1,7 +1,10 @@
+import { existsSync } from "node:fs";
 import { RiskEngine } from "./engine";
 import { Store } from "./store";
 import { RiskService } from "./service";
 import { createApp } from "./app";
+
+if (existsSync(".env")) process.loadEnvFile();
 
 const store = new Store();
 const service = new RiskService(new RiskEngine(), store);

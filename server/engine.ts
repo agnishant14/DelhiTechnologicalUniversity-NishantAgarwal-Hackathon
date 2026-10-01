@@ -14,6 +14,14 @@ export const MODEL_REVISION = "8f269abebfdd9009d7d9b5e96af7e5c6bfe50b20";
 const round = (n: number) => Math.round(n * 1000) / 1000;
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+export function signalId(text: string, mode: Mode) {
+  const normalized = text.replace(/\s+/g, " ").trim().toLowerCase();
+  return createHash("sha256")
+    .update(`${mode}:${normalized}`)
+    .digest("hex")
+    .slice(0, 24);
+}
+
 export function detectTickers(text: string): Ticker[] {
   return STOCKS.filter(
     (stock) =>
@@ -258,10 +266,7 @@ export class RiskEngine {
     return {
       ...doc,
       text,
-      id: createHash("sha256")
-        .update(`${mode}:${text.toLowerCase()}`)
-        .digest("hex")
-        .slice(0, 24),
+      id: signalId(text, mode),
       mode,
       tickers,
       sentiment,

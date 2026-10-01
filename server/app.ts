@@ -8,6 +8,23 @@ import { documentSchema } from "./validation";
 export function createApp(service: RiskService) {
   const app = express();
   app.disable("x-powered-by");
+  app.use("/api", (req, res, next) => {
+    const origin = req.get("origin");
+    if (origin && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+      try {
+        if (new URL(origin).hostname !== req.hostname) {
+          res
+            .status(403)
+            .json({ error: "Cross-origin updates are not allowed" });
+          return;
+        }
+      } catch {
+        res.status(403).json({ error: "Invalid origin" });
+        return;
+      }
+    }
+    next();
+  });
   app.use(express.json({ limit: "128kb" }));
   app.use("/api", (_req, res, next) => {
     res.set("Cache-Control", "no-store");
