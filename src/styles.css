@@ -1,0 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;450;500;550;600;650;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+:root { font-family: 'DM Sans', sans-serif; color: #edf1ed; background: #0c1115; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.welcome { max-width: 900px; margin: 18vh auto; padding: 40px; }
+.welcome svg { color: #c4f67a; }
+.welcome h1 { font-size: 72px; letter-spacing: -4px; margin: 20px 0; }
+.welcome p, .welcome span { color: #a0ada7; }
