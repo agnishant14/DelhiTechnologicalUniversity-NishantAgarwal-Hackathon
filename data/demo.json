@@ -31,7 +31,7 @@
   },
   {
     "id": "demo-07",
-    "text": "Google launches a new product. The announcement is scheduled for Monday.",
+    "text": "Google and Walmart announce an expanded partnership for automated retail fulfillment.",
     "sourceKind": "social"
   },
   {
@@ -46,7 +46,7 @@
   },
   {
     "id": "demo-10",
-    "text": "Johnson & Johnson faces a lawsuit over a major product recall.",
+    "text": "Johnson & Johnson and Eli Lilly navigate regulatory scrutiny over patent expirations.",
     "sourceKind": "news"
   },
   {
@@ -86,7 +86,7 @@
   },
   {
     "id": "demo-18",
-    "text": "The Federal Reserve raises interest rates as inflation accelerates.",
+    "text": "Federal Reserve policy impacts Visa and Mastercard payment network transaction volumes.",
     "sourceKind": "news"
   },
   {
@@ -96,7 +96,7 @@
   },
   {
     "id": "demo-20",
-    "text": "Johnson & Johnson unveils a new treatment with strong clinical results.",
+    "text": "Broadcom unveils next-generation AI switching silicon with robust datacenter backlog.",
     "sourceKind": "news"
   },
   {
@@ -116,7 +116,7 @@
   },
   {
     "id": "demo-24",
-    "text": "Apple faces supply chain delays. I am worried about weak demand and declining sales.",
+    "text": "Costco and Home Depot report resilient consumer traffic and steady margin expansion.",
     "sourceKind": "social"
   }
 ]
