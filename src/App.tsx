@@ -1018,7 +1018,7 @@ export default function App() {
                 <span
                   className={`ticker-delta ${idx.positive ? "positive" : "negative"}`}
                 >
-                  {idx.positive ? "▲" : "▼"} {idx.delta}
+                  {idx.delta}
                 </span>
               </div>
             ))}
@@ -1031,7 +1031,7 @@ export default function App() {
                 <span
                   className={`ticker-delta ${idx.positive ? "positive" : "negative"}`}
                 >
-                  {idx.positive ? "▲" : "▼"} {idx.delta}
+                  {idx.delta}
                 </span>
               </div>
             ))}
@@ -1157,7 +1157,7 @@ export default function App() {
                       <span className="metric-label">My holdings</span>
                       <h4>$ 32,568.56</h4>
                       <span className="metric-sub positive">
-                        Today: +95.89 (+0.67%) ▲
+                        Today: +95.89 (+0.67%)
                       </span>
                     </div>
 
@@ -1167,7 +1167,7 @@ export default function App() {
                         $ 5,216.40 <small style={{ fontSize: 16 }}>(+16.02%)</small>
                       </h4>
                       <span className="metric-sub negative">
-                        This month: -232.56 (-2.24%) ▼
+                        This month: -232.56 (-2.24%)
                       </span>
                     </div>
                   </div>
@@ -1350,7 +1350,7 @@ export default function App() {
                               isPositive ? "positive" : "negative"
                             }`}
                           >
-                            {signed(delta)}% {isPositive ? "▲" : "▼"}
+                            {signed(delta)}%
                           </span>
                         </div>
                       </div>
@@ -1813,7 +1813,7 @@ export default function App() {
                       {varMetrics?.baselTier1Ratio ?? 14.2}%
                     </h3>
                     <small style={{ color: "#059669", fontWeight: 600 }}>
-                      ✓ {varMetrics?.capitalAdequacyStatus ?? "Compliant"} (Min Req: {varMetrics?.minimumRegulatoryTier1 ?? 8.0}%)
+                      {varMetrics?.capitalAdequacyStatus ?? "Compliant"} (Min Req: {varMetrics?.minimumRegulatoryTier1 ?? 8.0}%)
                     </small>
                   </div>
                 </div>
@@ -2448,7 +2448,7 @@ export default function App() {
                   <h4 style={{ fontSize: 18, margin: "4px 0", color: "#059669" }}>
                     {varMetrics?.baselTier1Ratio ?? 14.2}%
                   </h4>
-                  <small style={{ color: "#059669" }}>✓ Fully Compliant (Min: 8.0%)</small>
+                  <small style={{ color: "#059669" }}>Fully Compliant (Min: 8.0%)</small>
                 </div>
                 <div className="investio-card" style={{ padding: 14 }}>
                   <span style={{ fontSize: 11, color: "#64748b" }}>1-Day VaR (95%)</span>
