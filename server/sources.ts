@@ -134,6 +134,36 @@ export const gdeltSource: Source = {
     });
   },
 };
+
+export const yahooFinanceSource: Source = {
+  name: "Yahoo Finance",
+  kind: "news",
+  fetch: async () => {
+    const xml = await request("https://finance.yahoo.com/news/rssindex");
+    const feed = await new Parser().parseString(xml);
+    return feed.items.slice(0, 20).flatMap((item) => {
+      const publishedAt = validDate(item.isoDate ?? item.pubDate);
+      return item.title && publishedAt
+        ? [
+            {
+              text: cleanText(item.title),
+              sourceKind: "news" as const,
+              sourceName: "Yahoo Finance",
+              sourceUrl: item.link,
+              publishedAt,
+            },
+          ]
+        : [];
+    });
+  },
+};
+
+export const defaultSources: Source[] = [
+  sources[0],
+  sources[1],
+  gdeltSource,
+  yahooFinanceSource,
+];
 export async function fetchSources(adapters: Source[]) {
   const results = await Promise.allSettled(
     adapters.map((source) => source.fetch()),
