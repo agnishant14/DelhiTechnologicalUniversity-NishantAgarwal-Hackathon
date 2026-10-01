@@ -72,16 +72,16 @@ export function createApp(service: RiskService) {
     if (q) {
       filtered = filtered.filter(
         (r) =>
-          r.text.toLowerCase().includes(q) ||
-          r.sourceName.toLowerCase().includes(q) ||
-          r.dataset.toLowerCase().includes(q),
+          (r.text?.toLowerCase() || "").includes(q) ||
+          (r.sourceName?.toLowerCase() || "").includes(q) ||
+          (r.dataset?.toLowerCase() || "").includes(q),
       );
     }
     if (datasetFilter && datasetFilter !== "all") {
       filtered = filtered.filter(
         (r) =>
-          r.dataset.toLowerCase().includes(datasetFilter) ||
-          r.sourceKind.toLowerCase().includes(datasetFilter),
+          (r.dataset?.toLowerCase() || "").includes(datasetFilter) ||
+          (r.sourceKind?.toLowerCase() || "").includes(datasetFilter),
       );
     }
     if (sentimentFilter && sentimentFilter !== "all") {
