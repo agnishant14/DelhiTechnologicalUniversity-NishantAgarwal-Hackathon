@@ -6,18 +6,17 @@ import {
 } from "../shared/types";
 
 export const POLICY = {
-  minWeight: 0.05,
-  maxWeight: 0.2,
+  minWeight: 0.02,
+  maxWeight: 0.15,
   maxTurnover: 0.08,
   halfLifeHours: 6,
   lookbackHours: 24,
   sensitivity: 0.8,
 };
 export const equalWeights = () =>
-  Object.fromEntries(STOCKS.map((s) => [s.ticker, 0.1])) as Record<
-    Ticker,
-    number
-  >;
+  Object.fromEntries(
+    STOCKS.map((s) => [s.ticker, 1 / STOCKS.length]),
+  ) as Record<Ticker, number>;
 export function aggregate(signals: Signal[], now = Date.now()) {
   return Object.fromEntries(
     STOCKS.map((stock) => {
@@ -54,8 +53,9 @@ export function rebalance(
   now = Date.now(),
 ) {
   const scores = aggregate(signals, now);
+  const baseWeight = 1 / STOCKS.length;
   const raw = STOCKS.map(
-    (s) => 0.1 * (1 + POLICY.sensitivity * scores[s.ticker].sentiment),
+    (s) => baseWeight * (1 + POLICY.sensitivity * scores[s.ticker].sentiment),
   );
   // Project onto a bounded simplex while preserving relative scores.
   let low = 0,
