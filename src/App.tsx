@@ -87,13 +87,50 @@ const NAV_VIEWS: View[] = [
   "method",
 ];
 
+const ROUTE_TO_VIEW: Record<string, View> = {
+  "/": "overview",
+  "/dashboard": "overview",
+  "/overview": "overview",
+  "/tacticalindex": "portfolio",
+  "/tackticalindex": "portfolio",
+  "/tactical-index": "portfolio",
+  "/portfolio": "portfolio",
+  "/stress": "stress",
+  "/stresstesting": "stress",
+  "/stress-testing": "stress",
+  "/wholesalestress": "stress",
+  "/wholesale-stress": "stress",
+  "/marketflow": "flow",
+  "/market-flow": "flow",
+  "/flow": "flow",
+  "/signals": "signals",
+  "/signalintel": "signals",
+  "/signal-intel": "signals",
+  "/methodology": "method",
+  "/method": "method",
+};
+
+const VIEW_TO_ROUTE: Record<View, string> = {
+  overview: "/dashboard",
+  portfolio: "/tacticalindex",
+  stress: "/stress",
+  flow: "/marketflow",
+  signals: "/signals",
+  method: "/methodology",
+};
+
+function parseViewFromPath(pathname: string): View {
+  const clean = pathname.toLowerCase().replace(/\/+$/, "") || "/";
+  return ROUTE_TO_VIEW[clean] ?? "overview";
+}
+
 const NAV_ITEMS = [
-  { label: "Dashboard" },
-  { label: "Tactical Index" },
-  { label: "Wholesale Stress" },
-  { label: "Market Flow" },
-  { label: "Signal Intel" },
-  { label: "Methodology" },
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "Tactical Index", href: "/tacticalindex" },
+  { label: "Wholesale Stress", href: "/stress" },
+  { label: "Market Flow", href: "/marketflow" },
+  { label: "Signal Intel", href: "/signals" },
+  { label: "Methodology", href: "/methodology" },
 ];
 
 const STOCK_META: Record<
@@ -232,7 +269,40 @@ function Modal({
 
 export default function App() {
   const [data, setData] = useState<Dashboard | null>(null);
-  const [view, setView] = useState<View>("overview");
+  const [view, setView] = useState<View>(() => {
+    if (typeof window !== "undefined") {
+      return parseViewFromPath(window.location.pathname);
+    }
+    return "overview";
+  });
+
+  const navigateTo = useCallback((nextView: View) => {
+    setView(nextView);
+    const targetRoute = VIEW_TO_ROUTE[nextView];
+    if (typeof window !== "undefined" && window.location.pathname !== targetRoute) {
+      window.history.pushState({ view: nextView }, "", targetRoute);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const next = parseViewFromPath(window.location.pathname);
+      setView(next);
+    };
+
+    window.addEventListener("popstate", handlePopState);
+
+    if (
+      typeof window !== "undefined" &&
+      (window.location.pathname === "/" || window.location.pathname === "")
+    ) {
+      window.history.replaceState({ view: "overview" }, "", "/dashboard");
+    }
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
   const [connectionError, setConnectionError] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -494,7 +564,7 @@ export default function App() {
           <GooeyNav
             items={NAV_ITEMS}
             value={NAV_VIEWS.indexOf(view)}
-            onChange={(idx) => setView(NAV_VIEWS[idx])}
+            onChange={(idx) => navigateTo(NAV_VIEWS[idx])}
             size="sm"
             activeColor="#2563eb"
             activeLabelColor="#ffffff"
@@ -596,9 +666,13 @@ export default function App() {
                   <div className="card-header-row">
                     <h3>Current portfolio</h3>
                     <div className="card-header-actions">
-                      <span className="dropdown-pill">
+                      <button
+                        type="button"
+                        className="dropdown-pill cursor-pointer"
+                        onClick={() => navigateTo("portfolio")}
+                      >
                         Tactical index <ChevronDown size={12} />
-                      </span>
+                      </button>
                       <button
                         className="btn-secondary-pill"
                         onClick={() => setAnalyze(true)}
