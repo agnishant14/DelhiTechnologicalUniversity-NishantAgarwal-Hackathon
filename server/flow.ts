@@ -22,7 +22,7 @@ export function predictMarketFlow(
     let maxImpact = 3;
     let highestImpactSignal: Signal | null = null;
 
-    matching.forEach((s) => {
+    for (const s of matching) {
       const ageHours = Math.max(0, (now - Date.parse(s.publishedAt)) / 3600000);
       const decay = 2 ** (-ageHours / 12);
       const impactMultiplier = s.impact / 5;
@@ -35,11 +35,11 @@ export function predictMarketFlow(
         maxImpact = s.impact;
         highestImpactSignal = s;
       }
-    });
+    }
 
     const avgSentiment = totalWeight > 0 ? weightedSentiment / totalWeight : 0;
     const confidence =
-      matching.length > 0 && highestImpactSignal?.confidence
+      highestImpactSignal && highestImpactSignal.confidence !== null
         ? highestImpactSignal.confidence
         : 0.75;
 
@@ -65,10 +65,11 @@ export function predictMarketFlow(
     );
 
     const primaryDriver =
-      highestImpactSignal?.text ??
-      (matching.length > 0
-        ? matching[0].text
-        : `${stock.name} trading near baseline sentiment equilibrium.`);
+      highestImpactSignal !== null
+        ? highestImpactSignal.text
+        : matching.length > 0
+          ? matching[0].text
+          : `${stock.name} trading near baseline sentiment equilibrium.`;
 
     return {
       ticker: stock.ticker,
