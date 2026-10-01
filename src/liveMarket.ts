@@ -34,6 +34,7 @@ export interface StockLiveState {
   volume: number;
   flash: "up" | "down" | null;
   history: MarketTick[];
+  lastUpdated?: string;
 }
 
 export const BASE_STOCK_PRICES: Record<string, number> = {
