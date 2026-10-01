@@ -68,6 +68,7 @@ import {
   type StockLiveState,
 } from "./liveMarket";
 import { StockLogo } from "./StockLogo";
+import { GooeyNav } from "./components/ui/gooey-nav";
 
 type View =
   | "overview"
@@ -76,6 +77,24 @@ type View =
   | "flow"
   | "signals"
   | "method";
+
+const NAV_VIEWS: View[] = [
+  "overview",
+  "portfolio",
+  "stress",
+  "flow",
+  "signals",
+  "method",
+];
+
+const NAV_ITEMS = [
+  { label: "Dashboard" },
+  { label: "Tactical Index" },
+  { label: "Wholesale Stress" },
+  { label: "Market Flow" },
+  { label: "Signal Intel" },
+  { label: "Methodology" },
+];
 
 const STOCK_META: Record<
   string,
@@ -462,44 +481,14 @@ export default function App() {
             <span>GoRisk</span>
           </div>
 
-          <nav className="nav-links" aria-label="Primary navigation">
-            <button
-              className={`nav-link ${view === "overview" ? "active" : ""}`}
-              onClick={() => setView("overview")}
-            >
-              Dashboard
-            </button>
-            <button
-              className={`nav-link ${view === "portfolio" ? "active" : ""}`}
-              onClick={() => setView("portfolio")}
-            >
-              Tactical Index
-            </button>
-            <button
-              className={`nav-link ${view === "stress" ? "active" : ""}`}
-              onClick={() => setView("stress")}
-            >
-              Wholesale Stress
-            </button>
-            <button
-              className={`nav-link ${view === "flow" ? "active" : ""}`}
-              onClick={() => setView("flow")}
-            >
-              Market Flow
-            </button>
-            <button
-              className={`nav-link ${view === "signals" ? "active" : ""}`}
-              onClick={() => setView("signals")}
-            >
-              Signal Intel
-            </button>
-            <button
-              className={`nav-link ${view === "method" ? "active" : ""}`}
-              onClick={() => setView("method")}
-            >
-              Methodology
-            </button>
-          </nav>
+          <GooeyNav
+            items={NAV_ITEMS}
+            value={NAV_VIEWS.indexOf(view)}
+            onChange={(idx) => setView(NAV_VIEWS[idx])}
+            size="sm"
+            activeColor="#2563eb"
+            activeLabelColor="#ffffff"
+          />
         </div>
 
         <div className="nav-right">
