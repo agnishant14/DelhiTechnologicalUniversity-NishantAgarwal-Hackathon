@@ -183,6 +183,11 @@ const GLOBAL_INDICES = [
   { name: "NASDAQ 100", val: "15,288.40", delta: "+87.20 (+0.57%)", positive: true },
   { name: "FTSE 100", val: "7,620.50", delta: "+1.08 (+0.01%)", positive: true },
   { name: "NIKKEI 225", val: "33,240.10", delta: "+124.50 (+0.38%)", positive: true },
+  { name: "DAX 40", val: "18,225.40", delta: "+45.10 (+0.25%)", positive: true },
+  { name: "SHANGHAI COMP", val: "3,088.20", delta: "-12.40 (-0.40%)", positive: false },
+  { name: "BRENT CRUDE", val: "84.50", delta: "+1.20 (+1.44%)", positive: true },
+  { name: "GOLD (OUNCE)", val: "2,342.10", delta: "+18.60 (+0.80%)", positive: true },
+  { name: "US 10Y YIELD", val: "4.28%", delta: "-0.04 (-0.92%)", positive: false },
 ];
 
 const pct = (n: number, digits = 1) => `${(n * 100).toFixed(digits)}%`;
@@ -621,19 +626,36 @@ export default function App() {
         </div>
       </header>
 
-      {/* Global Market Indices Ticker Strip */}
-      <div className="investio-ticker-strip">
-        {GLOBAL_INDICES.map((idx) => (
-          <div key={idx.name} className="ticker-item">
-            <span className="ticker-name">{idx.name}</span>
-            <span className="ticker-val">{idx.val}</span>
-            <span
-              className={`ticker-delta ${idx.positive ? "positive" : "negative"}`}
-            >
-              {idx.positive ? "▲" : "▼"} {idx.delta}
-            </span>
+      {/* Global Market Indices Ticker Strip (Continuous Infinite Marquee Loop) */}
+      <div className="investio-ticker-strip" title="Hover to pause ticker glide">
+        <div className="ticker-track">
+          <div className="ticker-group">
+            {GLOBAL_INDICES.map((idx, i) => (
+              <div key={`idx-a-${idx.name}-${i}`} className="ticker-item">
+                <span className="ticker-name">{idx.name}</span>
+                <span className="ticker-val">{idx.val}</span>
+                <span
+                  className={`ticker-delta ${idx.positive ? "positive" : "negative"}`}
+                >
+                  {idx.positive ? "▲" : "▼"} {idx.delta}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
+          <div className="ticker-group" aria-hidden="true">
+            {GLOBAL_INDICES.map((idx, i) => (
+              <div key={`idx-b-${idx.name}-${i}`} className="ticker-item">
+                <span className="ticker-name">{idx.name}</span>
+                <span className="ticker-val">{idx.val}</span>
+                <span
+                  className={`ticker-delta ${idx.positive ? "positive" : "negative"}`}
+                >
+                  {idx.positive ? "▲" : "▼"} {idx.delta}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Main Page Container */}
