@@ -58,6 +58,8 @@ import {
   type Holding,
   type Signal,
   type Ticker,
+  type DatasetItem,
+  type DatasetQueryResponse,
 } from "../shared/types";
 import {
   generateInitialTicks,
@@ -222,11 +224,13 @@ function Modal({
   subtitle,
   children,
   close,
+  maxWidth,
 }: {
   title: string;
   subtitle?: string;
   children: ReactNode;
   close: () => void;
+  maxWidth?: number | string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -237,11 +241,12 @@ function Modal({
       aria-label={title}
       ref={ref}
       onCancel={close}
+      style={maxWidth ? { maxWidth } : undefined}
       onClick={(e) => {
         if (e.target === ref.current) close();
       }}
     >
-      <div className="dialog-inner">
+      <div className="dialog-inner" style={maxWidth ? { maxWidth } : undefined}>
         <div className="dialog-head">
           <div>
             <span
@@ -316,6 +321,16 @@ export default function App() {
   const [selectedStock, setSelectedStock] = useState<Ticker>("AAPL");
   const [showAdvancedModal, setShowAdvancedModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showDatasetModal, setShowDatasetModal] = useState(false);
+  const [datasetRecords, setDatasetRecords] = useState<DatasetItem[]>([]);
+  const [datasetTotal, setDatasetTotal] = useState(0);
+  const [datasetFilteredCount, setDatasetFilteredCount] = useState(0);
+  const [datasetLoading, setDatasetLoading] = useState(false);
+  const [datasetSearch, setDatasetSearch] = useState("");
+  const [datasetSourceFilter, setDatasetSourceFilter] = useState("all");
+  const [datasetSentimentFilter, setDatasetSentimentFilter] = useState("all");
+  const [datasetPage, setDatasetPage] = useState(0);
+  const DATASET_PAGE_SIZE = 15;
   const [analyze, setAnalyze] = useState(false);
   const [text, setText] = useState("");
   const [search, setSearch] = useState("");
@@ -445,6 +460,72 @@ export default function App() {
       setText("");
       if (r.signals[0]) setSelectedSignal(r.signals[0]);
       else setNotice("Signal already exists in feed. No duplicate added.");
+    });
+  };
+
+  const fetchDataset = useCallback(
+    async (
+      searchQuery: string,
+      sourceFilt: string,
+      sentFilt: string,
+      page: number,
+    ) => {
+      setDatasetLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (searchQuery) params.set("search", searchQuery);
+        if (sourceFilt && sourceFilt !== "all") params.set("dataset", sourceFilt);
+        if (sentFilt && sentFilt !== "all") params.set("sentiment", sentFilt);
+        params.set("limit", String(DATASET_PAGE_SIZE));
+        params.set("offset", String(page * DATASET_PAGE_SIZE));
+        const res = await fetch(`/api/dataset?${params.toString()}`);
+        if (res.ok) {
+          const json: DatasetQueryResponse = await res.json();
+          setDatasetRecords(json.records);
+          setDatasetTotal(json.total);
+          setDatasetFilteredCount(json.filteredCount);
+        }
+      } catch {
+        // network error handled gracefully
+      } finally {
+        setDatasetLoading(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (showDatasetModal) {
+      void fetchDataset(
+        datasetSearch,
+        datasetSourceFilter,
+        datasetSentimentFilter,
+        datasetPage,
+      );
+    }
+  }, [
+    showDatasetModal,
+    datasetSearch,
+    datasetSourceFilter,
+    datasetSentimentFilter,
+    datasetPage,
+    fetchDataset,
+  ]);
+
+  const analyzeDatasetHeadline = (item: DatasetItem) => {
+    void action("analyze", async () => {
+      const r = await api<{ added: number; signals: Signal[] }>("analyze", {
+        text: item.text,
+        sourceKind: item.sourceKind,
+        sourceName: item.sourceName,
+      });
+      setShowDatasetModal(false);
+      if (r.signals[0]) {
+        setSelectedSignal(r.signals[0]);
+        setNotice(`Analyzed record from ${item.sourceName} with FinBERT.`);
+      } else {
+        setNotice("Signal already exists in feed. No duplicate added.");
+      }
     });
   };
 
@@ -690,7 +771,7 @@ export default function App() {
               <div className="left-stack">
                 <div className="investio-card greeting-card">
                   <h2>Hello Nishant, welcome back to GoRisk.</h2>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button
                       className="btn-secondary-pill"
                       onClick={() => void (data?.mode === "demo" ? replay() : refresh())}
@@ -711,6 +792,14 @@ export default function App() {
                       disabled={busy}
                     >
                       {data?.mode === "live" ? "Demo Mode" : "Live Feeds"}
+                    </button>
+                    <button
+                      className="btn-secondary-pill"
+                      onClick={() => setShowDatasetModal(true)}
+                      style={{ background: "#eff6ff", borderColor: "#bfdbfe", color: "#1d4ed8" }}
+                    >
+                      <Database size={13} />
+                      <span>HF &amp; Kaggle Dataset (920+)</span>
                     </button>
                   </div>
                 </div>
@@ -1283,11 +1372,19 @@ export default function App() {
         {/* Signals View */}
         {view === "signals" && (
           <div className="panel">
-            <div className="panel-head">
+            <div className="panel-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
               <div>
                 <h2>Multi-Source Signal Intelligence Explorer</h2>
                 <p>Filter by company, news provider, severity rating, and NLP sentiment</p>
               </div>
+              <button
+                className="btn-secondary-pill"
+                onClick={() => setShowDatasetModal(true)}
+                style={{ background: "#eff6ff", borderColor: "#bfdbfe", color: "#1d4ed8" }}
+              >
+                <Database size={13} />
+                <span>HF &amp; Kaggle Dataset (920+)</span>
+              </button>
             </div>
 
             <div className="feed-filters">
@@ -1661,6 +1758,416 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </Modal>
+        )}
+
+        {/* Large Benchmark Dataset Explorer Modal (Hugging Face & Kaggle) */}
+        {showDatasetModal && (
+          <Modal
+            title="Hugging Face & Kaggle Financial Benchmark Corpus (923 Records)"
+            subtitle="Multi-source verified dataset covering Twitter Sentiment, News Headlines, and Reuters/Bloomberg feeds"
+            close={() => setShowDatasetModal(false)}
+            maxWidth="880px"
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Top provenance summary cards */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: 10,
+                }}
+              >
+                <div
+                  className="investio-card"
+                  style={{
+                    padding: "10px 14px",
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                  }}
+                >
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#15803d", textTransform: "uppercase" }}>
+                    Twitter Sentiment
+                  </span>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#166534" }}>
+                    399 Records
+                  </div>
+                  <span style={{ fontSize: 10, color: "#4b5563" }}>
+                    zeroshot/twitter-financial-news
+                  </span>
+                </div>
+
+                <div
+                  className="investio-card"
+                  style={{
+                    padding: "10px 14px",
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
+                  }}
+                >
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#1d4ed8", textTransform: "uppercase" }}>
+                    Financial News
+                  </span>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#1e40af" }}>
+                    500 Records
+                  </div>
+                  <span style={{ fontSize: 10, color: "#4b5563" }}>
+                    ashraq &amp; Jean-Baptiste (HF)
+                  </span>
+                </div>
+
+                <div
+                  className="investio-card"
+                  style={{
+                    padding: "10px 14px",
+                    background: "#fefce8",
+                    border: "1px solid #fef08a",
+                  }}
+                >
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#a16207", textTransform: "uppercase" }}>
+                    Kaggle Benchmark
+                  </span>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#854d0e" }}>
+                    24 Records
+                  </div>
+                  <span style={{ fontSize: 10, color: "#4b5563" }}>
+                    Reuters &amp; CNBC Financial News
+                  </span>
+                </div>
+
+                <div
+                  className="investio-card"
+                  style={{
+                    padding: "10px 14px",
+                    background: "#faf5ff",
+                    border: "1px solid #e9d5ff",
+                  }}
+                >
+                  <span style={{ fontSize: 10, fontWeight: 700, color: "#7e22ce", textTransform: "uppercase" }}>
+                    Total Corpus
+                  </span>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#6b21a8" }}>
+                    {datasetTotal || 923} Items
+                  </div>
+                  <span style={{ fontSize: 10, color: "#4b5563" }}>
+                    S&amp;P 100 Ticker Ground Truth
+                  </span>
+                </div>
+              </div>
+
+              {/* Search & Filter Toolbar */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  background: "#f8fafc",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  border: "1px solid #e2e8f0",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "#fff",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: 6,
+                    padding: "6px 10px",
+                    flex: "1 1 240px",
+                  }}
+                >
+                  <Search size={14} color="#64748b" />
+                  <input
+                    type="text"
+                    value={datasetSearch}
+                    onChange={(e) => {
+                      setDatasetSearch(e.target.value);
+                      setDatasetPage(0);
+                    }}
+                    placeholder="Search keywords, tickers (e.g., AAPL, Fed, Tesla)..."
+                    style={{
+                      border: "none",
+                      outline: "none",
+                      fontSize: 12,
+                      width: "100%",
+                    }}
+                  />
+                  {datasetSearch && (
+                    <button
+                      onClick={() => {
+                        setDatasetSearch("");
+                        setDatasetPage(0);
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                    >
+                      <X size={12} color="#94a3b8" />
+                    </button>
+                  )}
+                </div>
+
+                <select
+                  value={datasetSourceFilter}
+                  onChange={(e) => {
+                    setDatasetSourceFilter(e.target.value);
+                    setDatasetPage(0);
+                  }}
+                  style={{
+                    fontSize: 12,
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                    border: "1px solid #cbd5e1",
+                    background: "#fff",
+                    color: "#0f172a",
+                  }}
+                >
+                  <option value="all">All Sources (923)</option>
+                  <option value="twitter">HF Twitter Sentiment (399)</option>
+                  <option value="ashraq">HF Ashraq News (300)</option>
+                  <option value="jean-baptiste">HF Jean-Baptiste News (200)</option>
+                  <option value="kaggle">Kaggle Benchmark (24)</option>
+                </select>
+
+                <select
+                  value={datasetSentimentFilter}
+                  onChange={(e) => {
+                    setDatasetSentimentFilter(e.target.value);
+                    setDatasetPage(0);
+                  }}
+                  style={{
+                    fontSize: 12,
+                    padding: "6px 10px",
+                    borderRadius: 6,
+                    border: "1px solid #cbd5e1",
+                    background: "#fff",
+                    color: "#0f172a",
+                  }}
+                >
+                  <option value="all">All Sentiments</option>
+                  <option value="positive">Positive Sentiment</option>
+                  <option value="negative">Negative Sentiment</option>
+                  <option value="neutral">Neutral Sentiment</option>
+                </select>
+
+                <div style={{ fontSize: 11, color: "#64748b", marginLeft: "auto" }}>
+                  Found <b>{datasetFilteredCount}</b> matches
+                </div>
+              </div>
+
+              {/* Records List */}
+              <div
+                style={{
+                  maxHeight: "360px",
+                  overflowY: "auto",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 8,
+                }}
+              >
+                {datasetLoading ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: 40,
+                      gap: 8,
+                      color: "#64748b",
+                    }}
+                  >
+                    <LoaderCircle className="spin" size={18} />
+                    <span>Loading dataset records...</span>
+                  </div>
+                ) : datasetRecords.length === 0 ? (
+                  <div
+                    style={{
+                      padding: 40,
+                      textAlign: "center",
+                      color: "#64748b",
+                      fontSize: 13,
+                    }}
+                  >
+                    No records matched the search criteria.
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    {datasetRecords.map((item, idx) => (
+                      <div
+                        key={item.id || idx}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          justifyContent: "space-between",
+                          padding: "10px 14px",
+                          borderBottom:
+                            idx === datasetRecords.length - 1
+                              ? "none"
+                              : "1px solid #f1f5f9",
+                          gap: 12,
+                          background: idx % 2 === 0 ? "#ffffff" : "#fbfcfe",
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 6,
+                              alignItems: "center",
+                              marginBottom: 4,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 9,
+                                fontWeight: 700,
+                                textTransform: "uppercase",
+                                padding: "2px 6px",
+                                borderRadius: 4,
+                                background:
+                                  item.sourceKind === "social"
+                                    ? "#e0e7ff"
+                                    : "#f1f5f9",
+                                color:
+                                  item.sourceKind === "social"
+                                    ? "#3730a3"
+                                    : "#334155",
+                              }}
+                            >
+                              {item.sourceKind}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: "#64748b",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {item.sourceName}
+                            </span>
+                            {item.sentimentGroundTruth && (
+                              <span
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  textTransform: "uppercase",
+                                  padding: "2px 6px",
+                                  borderRadius: 4,
+                                  background:
+                                    item.sentimentGroundTruth === "positive"
+                                      ? "#dcfce7"
+                                      : item.sentimentGroundTruth === "negative"
+                                        ? "#fee2e2"
+                                        : "#f1f5f9",
+                                  color:
+                                    item.sentimentGroundTruth === "positive"
+                                      ? "#15803d"
+                                      : item.sentimentGroundTruth === "negative"
+                                        ? "#b91c1c"
+                                        : "#475569",
+                                }}
+                              >
+                                {item.sentimentGroundTruth}
+                              </span>
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: "#0f172a",
+                              fontWeight: 500,
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {item.text}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="btn-primary-pill"
+                          onClick={() => analyzeDatasetHeadline(item)}
+                          disabled={busy}
+                          style={{
+                            fontSize: 11,
+                            padding: "5px 10px",
+                            whiteSpace: "nowrap",
+                            flexShrink: 0,
+                          }}
+                          title="Feed this headline into the live FinBERT Risk Engine"
+                        >
+                          <Sparkles size={11} />
+                          <span>Run FinBERT</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Pagination bar */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingTop: 4,
+                }}
+              >
+                <div style={{ fontSize: 11, color: "#64748b" }}>
+                  Showing{" "}
+                  <b>
+                    {datasetFilteredCount === 0
+                      ? 0
+                      : datasetPage * DATASET_PAGE_SIZE + 1}
+                    -
+                    {Math.min(
+                      (datasetPage + 1) * DATASET_PAGE_SIZE,
+                      datasetFilteredCount,
+                    )}
+                  </b>{" "}
+                  of <b>{datasetFilteredCount}</b> records
+                </div>
+
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    type="button"
+                    className="btn-secondary-pill"
+                    onClick={() => setDatasetPage((p) => Math.max(p - 1, 0))}
+                    disabled={datasetPage === 0 || datasetLoading}
+                    style={{ fontSize: 11, padding: "4px 10px" }}
+                  >
+                    Previous
+                  </button>
+                  <span style={{ fontSize: 11, color: "#475569" }}>
+                    Page {datasetPage + 1} of{" "}
+                    {Math.max(
+                      1,
+                      Math.ceil(datasetFilteredCount / DATASET_PAGE_SIZE),
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn-secondary-pill"
+                    onClick={() => setDatasetPage((p) => p + 1)}
+                    disabled={
+                      (datasetPage + 1) * DATASET_PAGE_SIZE >=
+                        datasetFilteredCount || datasetLoading
+                    }
+                    style={{ fontSize: 11, padding: "4px 10px" }}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
           </Modal>
         )}
       </main>
