@@ -1282,90 +1282,99 @@ export default function App() {
         )}
 
         {/* Market Flow View (Novel Feature) */}
-        {view === "flow" && flowData && (
+        {view === "flow" && (
           <div className="panel">
-            <div className="panel-head">
-              <div>
-                <h2>AI Market Flow &amp; Regime Forecaster</h2>
-                <p>Predicts systematic institutional capital reallocations using NLP sentiment velocity</p>
+            {!flowData ? (
+              <div style={{ padding: 48, textAlign: "center", color: "#64748b" }}>
+                <LoaderCircle className="spin" size={24} style={{ margin: "0 auto 12px", display: "block" }} />
+                <p>Loading AI Market Flow forecast...</p>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="panel-head">
+                  <div>
+                    <h2>AI Market Flow &amp; Regime Forecaster</h2>
+                    <p>Predicts systematic institutional capital reallocations using NLP sentiment velocity</p>
+                  </div>
+                </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gap: 16,
-                marginBottom: 24,
-              }}
-            >
-              <div className="investio-card" style={{ padding: 18 }}>
-                <span style={{ fontSize: 11, color: "#64748b" }}>Current Market Regime</span>
-                <h3 style={{ fontSize: 20, margin: "4px 0" }}>{flowData.regime}</h3>
-                <small style={{ color: "#059669" }}>{flowData.predictedDirection}</small>
-              </div>
-              <div className="investio-card" style={{ padding: 18 }}>
-                <span style={{ fontSize: 11, color: "#64748b" }}>Net Inflow Probability</span>
-                <h3 style={{ fontSize: 20, margin: "4px 0" }}>{pct(flowData.inflowProbability, 0)}</h3>
-                <small style={{ color: "#059669" }}>Score: {flowData.netFlowScore}/100</small>
-              </div>
-              <div className="investio-card" style={{ padding: 18 }}>
-                <span style={{ fontSize: 11, color: "#64748b" }}>Predicted 24h Volatility</span>
-                <h3 style={{ fontSize: 20, margin: "4px 0" }}>{flowData.predicted24hVolatility}%</h3>
-                <small style={{ color: "#64748b" }}>Expected trading band</small>
-              </div>
-              <div className="investio-card" style={{ padding: 18 }}>
-                <span style={{ fontSize: 11, color: "#64748b" }}>Directional Accuracy</span>
-                <h3 style={{ fontSize: 20, margin: "4px 0" }}>
-                  {flowData.historicalAccuracy.directionalAccuracy}%
-                </h3>
-                <small style={{ color: "#059669" }}>
-                  Info Ratio: {flowData.historicalAccuracy.simulatedInformationRatio}
-                </small>
-              </div>
-            </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(4, 1fr)",
+                    gap: 16,
+                    marginBottom: 24,
+                  }}
+                >
+                  <div className="investio-card" style={{ padding: 18 }}>
+                    <span style={{ fontSize: 11, color: "#64748b" }}>Current Market Regime</span>
+                    <h3 style={{ fontSize: 20, margin: "4px 0" }}>{flowData.regime}</h3>
+                    <small style={{ color: "#059669" }}>{flowData.predictedDirection}</small>
+                  </div>
+                  <div className="investio-card" style={{ padding: 18 }}>
+                    <span style={{ fontSize: 11, color: "#64748b" }}>Net Inflow Probability</span>
+                    <h3 style={{ fontSize: 20, margin: "4px 0" }}>{pct(flowData.inflowProbability, 0)}</h3>
+                    <small style={{ color: "#059669" }}>Score: {flowData.netFlowScore}/100</small>
+                  </div>
+                  <div className="investio-card" style={{ padding: 18 }}>
+                    <span style={{ fontSize: 11, color: "#64748b" }}>Predicted 24h Volatility</span>
+                    <h3 style={{ fontSize: 20, margin: "4px 0" }}>{flowData.predicted24hVolatility}%</h3>
+                    <small style={{ color: "#64748b" }}>Expected trading band</small>
+                  </div>
+                  <div className="investio-card" style={{ padding: 18 }}>
+                    <span style={{ fontSize: 11, color: "#64748b" }}>Directional Accuracy</span>
+                    <h3 style={{ fontSize: 20, margin: "4px 0" }}>
+                      {flowData.historicalAccuracy.directionalAccuracy}%
+                    </h3>
+                    <small style={{ color: "#059669" }}>
+                      Info Ratio: {flowData.historicalAccuracy.simulatedInformationRatio}
+                    </small>
+                  </div>
+                </div>
 
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Asset</th>
-                    <th>Predicted Flow</th>
-                    <th>Regime</th>
-                    <th>Momentum</th>
-                    <th>Expected Drift</th>
-                    <th>Primary Driving Headline</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {flowData.stockFlows.map((sf) => (
-                    <tr key={sf.ticker}>
-                      <td>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <StockLogo ticker={sf.ticker} size={22} />
-                          <div>
-                            <b>{sf.name}</b> ({sf.ticker})
-                          </div>
-                        </div>
-                      </td>
-                      <td style={{ color: sf.predictedFlowMillions >= 0 ? "#059669" : "#dc2626", fontWeight: 700 }}>
-                        {sf.predictedFlowMillions >= 0 ? "+" : "-"}${ Math.abs(sf.predictedFlowMillions).toFixed(1) }M
-                      </td>
-                      <td>
-                        <span className="event-tag">{sf.regime}</span>
-                      </td>
-                      <td>{sf.momentumScore}/100</td>
-                      <td style={{ color: sf.expectedDriftPct >= 0 ? "#059669" : "#dc2626", fontWeight: 600 }}>
-                        {sf.expectedDriftPct >= 0 ? "+" : ""}{sf.expectedDriftPct.toFixed(2)}%
-                      </td>
-                      <td style={{ maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {sf.primaryDriver}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Asset</th>
+                        <th>Predicted Flow</th>
+                        <th>Regime</th>
+                        <th>Momentum</th>
+                        <th>Expected Drift</th>
+                        <th>Primary Driving Headline</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {flowData.stockFlows.map((sf) => (
+                        <tr key={sf.ticker}>
+                          <td>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <StockLogo ticker={sf.ticker} size={22} />
+                              <div>
+                                <b>{sf.name}</b> ({sf.ticker})
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ color: sf.predictedFlowMillions >= 0 ? "#059669" : "#dc2626", fontWeight: 700 }}>
+                            {sf.predictedFlowMillions >= 0 ? "+" : "-"}${ Math.abs(sf.predictedFlowMillions).toFixed(1) }M
+                          </td>
+                          <td>
+                            <span className="event-tag">{sf.regime}</span>
+                          </td>
+                          <td>{sf.momentumScore}/100</td>
+                          <td style={{ color: sf.expectedDriftPct >= 0 ? "#059669" : "#dc2626", fontWeight: 600 }}>
+                            {sf.expectedDriftPct >= 0 ? "+" : ""}{sf.expectedDriftPct.toFixed(2)}%
+                          </td>
+                          <td style={{ maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {sf.primaryDriver}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -1443,40 +1452,57 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSignals.map((s) => (
-                    <tr key={s.id}>
-                      <td>
-                        <div>
-                          <div style={{ fontWeight: 600, color: "#0f172a", marginBottom: 3 }}>
-                            {s.text}
-                          </div>
-                          <div style={{ fontSize: 11, color: "#64748b" }}>
-                            {s.tickers.join(", ")} · {s.sourceName} · {clock(s.publishedAt)}
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="event-tag">{s.event}</span>
-                      </td>
-                      <td>
-                        <span className={`sentiment-badge ${tone(s.sentiment)}`}>
-                          {signed(s.sentiment)}
-                        </span>
-                      </td>
-                      <td>
-                        <b>{s.impact}/10</b>
-                      </td>
-                      <td>
-                        <button
-                          className="btn-secondary-pill"
-                          style={{ padding: "4px 8px", fontSize: 11 }}
-                          onClick={() => setSelectedSignal(s)}
-                        >
-                          Inspect
-                        </button>
+                  {filteredSignals.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={5}
+                        style={{
+                          textAlign: "center",
+                          padding: "36px",
+                          color: "#64748b",
+                          fontSize: 13,
+                        }}
+                      >
+                        No signals matched the selected filters.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredSignals.map((s) => (
+                      <tr key={s.id}>
+                        <td>
+                          <div>
+                            <div style={{ fontWeight: 600, color: "#0f172a", marginBottom: 3 }}>
+                              {s.text}
+                            </div>
+                            <div style={{ fontSize: 11, color: "#64748b" }}>
+                              {s.tickers.length > 0 ? `${s.tickers.join(", ")} · ` : ""}
+                              {s.sourceName} · {clock(s.publishedAt)}
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="event-tag">{s.event}</span>
+                        </td>
+                        <td>
+                          <span className={`sentiment-badge ${tone(s.sentiment)}`}>
+                            {signed(s.sentiment)}
+                          </span>
+                        </td>
+                        <td>
+                          <b>{s.impact}/10</b>
+                        </td>
+                        <td>
+                          <button
+                            className="btn-secondary-pill"
+                            style={{ padding: "4px 8px", fontSize: 11 }}
+                            onClick={() => setSelectedSignal(s)}
+                          >
+                            Inspect
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -1698,7 +1724,10 @@ export default function App() {
               </div>
 
               <div style={{ background: "#f8fafc", padding: 12, borderRadius: 8, fontSize: 11, color: "#475569" }}>
-                <b>Engine Evidence:</b> {selectedSignal.evidence?.join(", ") || "Derived via FinBERT sentiment and rule classification."}
+                <b>Engine Evidence:</b>{" "}
+                {selectedSignal.evidence?.length
+                  ? selectedSignal.evidence.join(", ")
+                  : "Derived via FinBERT sentiment and rule classification."}
               </div>
             </div>
           </Modal>
