@@ -1,63 +1,30 @@
-# SignalDesk
+# SignalDesk - S&P Global & Crisil Campus Hackathon
 
-**Financial news → risk signals → a sentiment-driven stock index.**
+**Candidate Name:** Nishant Agarwal
 
-A working implementation of the DTU hackathon's unified AI/NLP Risk Engine and **Module A: Tactical Index Rebalancing**. SignalDesk analyzes news and community posts with local FinBERT inference, explains each risk signal, and adjusts a ten-stock mock index.
+**College Email ID:** Pending — add before submission
+
+**College / Campus:** Delhi Technological University
+
+**Demo Video Link:** Pending — a public-access unlisted YouTube walkthrough is required
+
+**Slide Deck Link:** Pending — the 5–7 slide deck has not been created yet
+
+## 1. Project Overview / Problem Statement & Approach
+
+Financial news and social conversations arrive as unstructured text. A risk analyst needs to identify the relevant company, understand the sentiment and event, and see how that information could affect a portfolio. SignalDesk brings those steps into one explainable workflow.
+
+The prototype implements the unified AI/NLP Risk Engine and **Module A: Tactical Index Rebalancing**. It uses local FinBERT inference for sentiment, explicit rules for event and impact estimates, and a constrained ten-stock mock index. News and community posts enter the same pipeline; a separate fictional dataset makes the demo reproducible without live feeds.
+
+The dashboard connects each headline to its structured signal and allocation history. It is a research prototype: market impact is heuristic, allocations are simulated, and no trades are executed.
 
 ![SignalDesk dashboard with fictional demo signals](docs/dashboard.jpg)
 
-## Quick start
+## 2. Architecture & Tech Stack
 
-Requires **Node.js 22.13 or newer** and npm. Node 24 is also supported.
+![SignalDesk architecture and data flow](docs/architecture.png)
 
-```sh
-git clone https://github.com/agnishant14/DelhiTechnologicalUniversity-NishantAgarwal-Hackathon.git
-cd DelhiTechnologicalUniversity-NishantAgarwal-Hackathon
-npm ci
-npm run dev
-```
-
-Open **http://localhost:5173**. The API runs at http://localhost:3001.
-
-On the first run, FinBERT downloads its quantized model from Hugging Face. Allow a few minutes and keep an internet connection available. Subsequent starts use the local cache. No API key or paid service is required.
-
-For a production build served by one local process:
-
-```sh
-npm run build
-npm start
-```
-
-Open **http://localhost:3001**. Keep that terminal running while using the app. The server binds to the local machine by default; this repository is not a hosted website.
-
-## Try the demo
-
-1. Start in **Demo workspace**: 12 fictional news and social scenarios are analyzed through the actual engine.
-2. Select **Run next event** to process two more scenarios and update allocation history. There are 24 scenarios in total.
-3. Open any headline to inspect sentiment probabilities, event cues, impact calculation, provenance, and JSON.
-4. Use **Analyze text** to submit your own headline. It is labelled manual input and saved to the current workspace.
-5. Open **Signal explorer** to search and filter, or **Index portfolio** to compare weights and their latest changes.
-6. Select **Connect live sources**, then **Fetch live sources**. This switches to a separate dataset and portfolio. Demo records never appear as live headlines.
-7. Use **Export data** to download signals, holdings, history, and source status as JSON.
-
-Original synthetic scenarios are in [`server/demo.ts`](server/demo.ts). They are not historical news or claims about the named companies. Replaying stops after the final scenario; manual analysis remains available. Data persists across restarts. For a fresh, separate demo, launch with a new `DATABASE_PATH` rather than deleting your existing database.
-
-## Architecture
-
-```mermaid
-flowchart LR
-  News[News RSS / GDELT] --> Ingest[Validate, clean, deduplicate]
-  Social[Hacker News community posts] --> Ingest
-  Demo[Labelled demo / manual input] --> Ingest
-  Ingest --> NLP[FinBERT sentiment]
-  NLP --> Rules[Company mapping + event / impact rules]
-  Rules --> DB[(SQLite signals)]
-  DB --> Index[Constrained index rebalancer]
-  Index --> History[(Allocation history)]
-  DB --> API[Express JSON API]
-  History --> API
-  API --> UI[React dashboard]
-```
+[High-resolution diagram](docs/architecture.png) · [Editable SVG](docs/architecture.svg)
 
 | Component   | Implementation                                            |
 | ----------- | --------------------------------------------------------- |
@@ -102,7 +69,55 @@ The index contains AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, JPM, XOM, and JNJ,
 
 Positive sentiment raises the raw target; negative sentiment lowers it. Normalization, position bounds, previous weights, and signals about other companies also influence the final change. `pp` in the table means **percentage points**, not a stock return.
 
-## Sources and configuration
+## 3. Dataset Used
+
+- **Synthetic demo:** [`data/demo.json`](data/demo.json) contains all 24 built-in scenarios: 17 news-style headlines and 7 social-style posts. The application reads this JSON file directly. These are original fictional inputs created with AI assistance, not historical news or actual posts.
+- **Provenance:** [`data/sources.json`](data/sources.json) records provider URLs, query coverage, access assumptions, and the pinned model. [`data/README.md`](data/README.md) describes the fields and simulation timestamps.
+- **Live news:** Google News RSS by default; GDELT is available as an alternative.
+- **Live social data:** Hacker News story titles through Algolia. The initial query focuses on NVIDIA and does not represent all companies equally.
+- **Portfolio:** Ten synthetic positions use real public company names. Starting weights are 10% each; no real account, customer, transaction, or confidential client data is used.
+
+All static inputs needed for the default demo are included. Dynamic live responses are fetched on demand and can be exported from the dashboard for a particular run. No model training or fine-tuning is performed. FinBERT weights download separately and retain their upstream license; generated scores are not ground-truth labels.
+
+## 4. Quickstart & Installation
+
+**Runtime:** Node.js 22.13+ and npm. Tested locally on macOS with Node 24; automated checks run on Ubuntu with Node 22.
+
+Requires **Node.js 22.13 or newer** and npm. Node 24 is also supported.
+
+```sh
+git clone https://github.com/agnishant14/DelhiTechnologicalUniversity-NishantAgarwal-Hackathon.git
+cd DelhiTechnologicalUniversity-NishantAgarwal-Hackathon
+npm ci
+npm run dev
+```
+
+Open **http://localhost:5173**. The API runs at http://localhost:3001.
+
+On the first run, FinBERT downloads its quantized model from Hugging Face. Allow a few minutes and keep an internet connection available. Subsequent starts use the local cache. No API key or paid service is required.
+
+For a production build served by one local process:
+
+```sh
+npm run build
+npm start
+```
+
+Open **http://localhost:3001**. Keep that terminal running while using the app. The server binds to the local machine by default; this repository is not a hosted website.
+
+### Demo walkthrough
+
+1. Start in **Demo workspace**: 12 fictional news and social scenarios are analyzed through the actual engine.
+2. Select **Run next event** to process two more scenarios and update allocation history. There are 24 scenarios in total.
+3. Open any headline to inspect sentiment probabilities, event cues, impact calculation, provenance, and JSON.
+4. Use **Analyze text** to submit your own headline. It is labelled manual input and saved to the current workspace.
+5. Open **Signal explorer** to search and filter, or **Index portfolio** to compare weights and their latest changes.
+6. Select **Connect live sources**, then **Fetch live sources**. This switches to a separate dataset and portfolio. Demo records never appear as live headlines.
+7. Use **Export data** to download signals, holdings, history, and source status as JSON.
+
+Original synthetic scenarios are in [`data/demo.json`](data/demo.json). They are not historical news or claims about the named companies. Replaying stops after the final scenario; manual analysis remains available. Data persists across restarts. For a fresh, separate demo, launch with a new `DATABASE_PATH` rather than deleting your existing database.
+
+### Configuration and live feeds
 
 Copy `.env.example` to `.env` for optional configuration. Existing environment variables take precedence.
 
@@ -122,7 +137,7 @@ The local cache and database are ignored by Git. No credentials are needed for t
 
 If FinBERT cannot load, the app shows **Lexicon fallback**, and every affected signal records that model. Its confidence is `null`. It is a basic negation-aware lexicon and should not be treated as equivalent to FinBERT. Set `NLP_MODEL=lexicon` for a fast first run without model downloads. The interface has system font fallbacks when Google Fonts is unavailable.
 
-## API
+### API
 
 All paths are under `/api`. Error responses are JSON. The local API is intended for one research workspace, without user accounts or authentication.
 
@@ -145,7 +160,7 @@ curl http://localhost:3001/api/analyze \
 
 `text` is required (10–6000 trimmed characters). Optional fields are `sourceKind` (`news`, `social`, or `manual`), `sourceName`, HTTP(S) `sourceUrl`, and ISO `publishedAt`. Manual input and the current time are the defaults. The server sets the workspace and sample flag; clients cannot mark live records as demo fixtures. Responses have `{ added, signals }`; duplicates return an empty array. Requests made during startup return 503; overlapping updates return 409; refresh cooldown returns 429.
 
-## Verify
+### Validation
 
 ```sh
 npm test
@@ -157,7 +172,7 @@ The main tests use deterministic model outputs and do not require downloads. The
 
 The optional model smoke test runs actual FinBERT on three synthetic positive/negative/neutral examples. **This is not an accuracy benchmark or backtest.** GitHub Actions runs tests and the production build on each push.
 
-## Project map
+### Project map
 
 ```text
 server/engine.ts       Sentiment, company matching, event and impact rules
@@ -173,7 +188,18 @@ tests/                Engine, portfolio, source, and API checks
 scripts/check-model.ts Real-model smoke test
 ```
 
-## Scope and limits
+## 5. Key Results & Domain Impact
+
+- Produces source-linked sentiment, event classification, and impact estimates from news and social-style text.
+- Demonstrates allocation changes across ten stocks with weights totalling 100%, 5–20% position bounds, and an 8% turnover cap per batch.
+- Exact duplicate input produces no additional inference or rebalance. This avoids repeating work compared with reprocessing every fetched headline.
+- **20 automated tests pass**, including source parsing, input validation, persistence, duplicate handling, update coordination, and portfolio constraints. GitHub Actions runs tests and the build on every push.
+- Three actual-FinBERT smoke checks returned positive **+0.719**, negative **−0.912**, and neutral **−0.036** sentiment for synthetic examples. These are sanity checks, not an accuracy benchmark.
+- Public news and community feeds were exercised end to end. Network timing and feed contents vary; no latency, accuracy improvement, return, or cost-saving percentage is claimed.
+
+For an analyst, the practical benefit is a traceable route from incoming text to risk triage and portfolio scenario exploration. The interface shows the original input, scoring rationale, and allocation changes together, making assumptions easier to challenge during review.
+
+### Limitations
 
 - Implements the core engine and **Module A**. Module B is not included.
 - Uses a real pretrained sentiment model; event classification and impact remain documented heuristics without external calibration.
@@ -181,3 +207,13 @@ scripts/check-model.ts Real-model smoke test
 - English text only; sentiment input truncates at 512 tokens. Sarcasm, negation, competing events, manipulated posts, and domain shifts can produce incorrect scores.
 - Signals are stored for review; allocation calculations only consider recent signals. Dashboard sentiment summarizes all stored signals in the selected workspace, not a market-wide sentiment index.
 - No execution, price feed, transaction costs, liquidity model, return prediction, or financial-performance claim. This is a hackathon research prototype with a simulated portfolio.
+
+### AI assistance and attribution
+
+AI assistance was used to develop the implementation, synthetic scenarios, documentation, and diagram. The project uses the third-party FinBERT model and open-source libraries listed above; it does not claim to have trained a new model. The candidate should review the implementation and be prepared to explain its assumptions in the jury session.
+
+### License and submission status
+
+Original code and synthetic scenarios are available under the [MIT license](LICENSE). External model weights and live content retain their upstream terms.
+
+The public code repository, architecture diagram, and synthetic dataset are available. The college email, presentation deck, and YouTube walkthrough still need to be completed before the official submission.
