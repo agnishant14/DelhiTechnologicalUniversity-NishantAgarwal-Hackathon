@@ -105,12 +105,13 @@ export function holdings(
   previous = equalWeights(),
 ): Holding[] {
   const scores = aggregate(signals);
+  const baseWeight = 1 / STOCKS.length;
   return STOCKS.map(({ ticker, name, sector }) => ({
     ticker,
     name,
     sector,
-    weight: current[ticker],
-    previousWeight: previous[ticker],
+    weight: current?.[ticker] ?? baseWeight,
+    previousWeight: previous?.[ticker] ?? baseWeight,
     ...scores[ticker],
   }));
 }
