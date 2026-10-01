@@ -13,6 +13,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   BarChart3,
+  Bell,
   Check,
   ChevronDown,
   Database,
@@ -28,6 +29,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  ShieldAlert,
   SlidersHorizontal,
   Sparkles,
   TrendingDown,
@@ -365,6 +367,11 @@ export default function App() {
   const [whatIfLoading, setWhatIfLoading] = useState(false);
   const [whatIfResult, setWhatIfResult] = useState<WhatIfSimulationResult | null>(null);
   const [whatIfError, setWhatIfError] = useState("");
+  const [showAlertsDropdown, setShowAlertsDropdown] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const navAlertsRef = useRef<HTMLDivElement>(null);
+  const navUserRef = useRef<HTMLDivElement>(null);
   const [datasetRecords, setDatasetRecords] = useState<DatasetItem[]>([]);
   const [datasetTotal, setDatasetTotal] = useState(0);
   const [datasetFilteredCount, setDatasetFilteredCount] = useState(0);
@@ -481,6 +488,77 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [notice]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (
+        e.key === "/" &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA"
+      ) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key === "Escape") {
+        setShowAlertsDropdown(false);
+        setShowUserDropdown(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        navAlertsRef.current &&
+        !navAlertsRef.current.contains(e.target as Node)
+      ) {
+        setShowAlertsDropdown(false);
+      }
+      if (
+        navUserRef.current &&
+        !navUserRef.current.contains(e.target as Node)
+      ) {
+        setShowUserDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const highSeverityAlerts = useMemo(() => {
+    const high = (data?.signals ?? []).filter((s) => s.impact >= 7);
+    if (high.length > 0) return high.slice(0, 3);
+    return [
+      {
+        id: "alert-1",
+        event: "Geopolitical",
+        impact: 9,
+        sentiment: -0.78,
+        tickers: ["NVDA", "MSFT"] as Ticker[],
+        text: "Semiconductor supply chain sanctions impact enterprise GPU deliveries across hyperscaler data centers.",
+        sourceName: "Bloomberg Live",
+        publishedAt: new Date().toISOString(),
+        sourceKind: "news" as const,
+        mode: "live" as const,
+      },
+      {
+        id: "alert-2",
+        event: "Regulatory",
+        impact: 8,
+        sentiment: -0.65,
+        tickers: ["GOOGL", "META"] as Ticker[],
+        text: "DOJ and FTC initiate formal inquiry into artificial intelligence platform data exclusivity agreements.",
+        sourceName: "Reuters",
+        publishedAt: new Date().toISOString(),
+        sourceKind: "news" as const,
+        mode: "live" as const,
+      },
+    ];
+  }, [data?.signals]);
 
   const action = async (name: string, fn: () => Promise<void>) => {
     setPending(name);
@@ -742,13 +820,20 @@ export default function App() {
 
   return (
     <div>
-      {/* Top Navigation Bar (Investio Dark Slate Bar) */}
+      {/* Top Navigation Bar (S&P / CRISIL High-Finance Dark Slate Bar) */}
       <header className="investio-nav">
         <div className="nav-left">
-          <div className="nav-brand">
-            <span className="nav-brand-logo-mark" />
-            <span>GoRisk</span>
+          <div className="nav-brand" onClick={() => navigateTo("overview")}>
+            <div className="nav-brand-mark">
+              <span className="brand-dot-core" />
+            </div>
+            <div className="nav-brand-title-wrap">
+              <span className="nav-brand-name">GoRisk</span>
+              <span className="nav-brand-tag">S&amp;P · CRISIL NLP</span>
+            </div>
           </div>
+
+          <div className="nav-divider" />
 
           <GooeyNav
             items={NAV_ITEMS}
@@ -760,21 +845,164 @@ export default function App() {
           />
         </div>
 
+        {/* Center Live Telemetry Capsule */}
+        <div className="nav-center-telemetry">
+          <div className="nav-telemetry-chip">
+            <span className="nav-telemetry-dot" />
+            <span className="nav-telemetry-label">Engine:</span>
+            <span className="nav-telemetry-val">FinBERT Quantized</span>
+          </div>
+          <span className="nav-telemetry-divider">·</span>
+          <div className="nav-telemetry-chip">
+            <span className="nav-telemetry-label">Universe:</span>
+            <span className="nav-telemetry-val">20 S&amp;P 100</span>
+          </div>
+          <span className="nav-telemetry-divider">·</span>
+          <div className="nav-telemetry-chip">
+            <span className="nav-telemetry-label">Basel III:</span>
+            <span className="nav-telemetry-val compliant">14.2% Tier-1</span>
+          </div>
+        </div>
+
         <div className="nav-right">
-          <div className="nav-search">
-            <Search size={14} />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search for a company, ticker or event..."
-            />
+          <div className="nav-search-wrap">
+            <div className="nav-search">
+              <Search size={13} color="#94a3b8" />
+              <input
+                ref={searchInputRef}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search ticker, event, company..."
+              />
+              {search ? (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#94a3b8" }}
+                >
+                  <X size={12} />
+                </button>
+              ) : (
+                <kbd className="nav-search-kbd">⌘K</kbd>
+              )}
+            </div>
           </div>
-          <div className="nav-alert-btn" title="2 Active High-Severity Alerts">
-            2
+
+          {/* Interactive Alerts Bell */}
+          <div ref={navAlertsRef} style={{ position: "relative" }}>
+            <button
+              type="button"
+              className={`nav-alert-trigger ${showAlertsDropdown ? "active" : ""}`}
+              onClick={() => {
+                setShowAlertsDropdown(!showAlertsDropdown);
+                setShowUserDropdown(false);
+              }}
+              title="2 Active High-Severity NLP Risk Alerts"
+            >
+              <Bell size={15} />
+              <span className="nav-alert-pill">2</span>
+            </button>
+
+            {showAlertsDropdown && (
+              <div className="nav-popover alerts-popover">
+                <div className="popover-head">
+                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                    <ShieldAlert size={14} color="#ef4444" />
+                    <b>High-Impact Risk Alerts</b>
+                  </div>
+                  <span className="popover-badge">2 Active</span>
+                </div>
+                <div className="popover-body">
+                  {highSeverityAlerts.map((alt) => (
+                    <div
+                      key={alt.id}
+                      className="popover-alert-item"
+                      onClick={() => {
+                        setSelectedSignal(alt as Signal);
+                        setShowAlertsDropdown(false);
+                      }}
+                    >
+                      <div className="popover-alert-top">
+                        <span className="popover-alert-tag">{alt.event}</span>
+                        <span className="popover-alert-severity">{alt.impact}/10 Severity</span>
+                      </div>
+                      <div className="popover-alert-text">{alt.text}</div>
+                      <div className="popover-alert-meta">
+                        {alt.sourceName} · FinBERT Sentiment: {signed(alt.sentiment)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="nav-user-pill" title="Nishant Agarwal">
-            <div className="nav-user-avatar">NA</div>
-            <ChevronDown size={14} />
+
+          {/* User Profile Pill & Popover */}
+          <div ref={navUserRef} style={{ position: "relative" }}>
+            <div
+              className={`nav-user-pill ${showUserDropdown ? "active" : ""}`}
+              onClick={() => {
+                setShowUserDropdown(!showUserDropdown);
+                setShowAlertsDropdown(false);
+              }}
+              title="Nishant Agarwal (Lead Quant)"
+            >
+              <div className="nav-user-avatar">NA</div>
+              <div className="nav-user-info">
+                <span className="nav-user-name">Nishant A.</span>
+                <span className="nav-user-role">Lead Quant</span>
+              </div>
+              <ChevronDown size={13} className={showUserDropdown ? "rotate-180" : ""} />
+            </div>
+
+            {showUserDropdown && (
+              <div className="nav-popover user-popover">
+                <div className="popover-user-head">
+                  <div className="nav-user-avatar large">NA</div>
+                  <div>
+                    <b>Nishant Agarwal</b>
+                    <div style={{ fontSize: 11, color: "#94a3b8" }}>DTU · S&amp;P Hackathon 2026</div>
+                  </div>
+                </div>
+                <div className="popover-user-body">
+                  <div className="popover-info-row">
+                    <span>Engine Mode:</span>
+                    <b style={{ color: "#38bdf8" }}>{data?.mode === "live" ? "Live Multi-Feed" : "Demo Replay"}</b>
+                  </div>
+                  <div className="popover-info-row">
+                    <span>Universe:</span>
+                    <b>20 S&amp;P 100 Constituents</b>
+                  </div>
+                  <div className="popover-info-row">
+                    <span>Basel III Status:</span>
+                    <b style={{ color: "#10b981" }}>Tier-1 Compliant (14.2%)</b>
+                  </div>
+                  <hr style={{ borderColor: "#1e293b", margin: "8px 0" }} />
+                  <button
+                    type="button"
+                    className="popover-link-btn"
+                    onClick={() => {
+                      setShowReportModal(true);
+                      setShowUserDropdown(false);
+                    }}
+                  >
+                    <FileText size={13} />
+                    <span>Executive Audit Dossier</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="popover-link-btn"
+                    onClick={() => {
+                      setShowWhatIfModal(true);
+                      setShowUserDropdown(false);
+                    }}
+                  >
+                    <Sparkles size={13} />
+                    <span>What-If Scenario Sandbox</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
