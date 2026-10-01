@@ -270,6 +270,256 @@ export function StockLogo({
         </span>
       );
 
+    case "V":
+      return (
+        <span
+          className={`stock-logo-badge ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: "#1a1f71",
+            color: "#ffffff",
+          }}
+          title="Visa Inc."
+        >
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize}>
+            <text
+              x="12"
+              y="16"
+              textAnchor="middle"
+              fill="#f7b600"
+              fontSize="12"
+              fontWeight="900"
+              fontStyle="italic"
+            >
+              VISA
+            </text>
+          </svg>
+        </span>
+      );
+
+    case "WMT":
+      return (
+        <span
+          className={`stock-logo-badge ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: "#0071ce",
+            color: "#ffffff",
+          }}
+          title="Walmart Inc."
+        >
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize}>
+            <circle cx="12" cy="12" r="2.5" fill="#ffc220" />
+            <path
+              d="M12 2v4M12 18v4M3.5 7l3.5 2M17 15l3.5 2M3.5 17l3.5-2M17 9l3.5-2"
+              stroke="#ffc220"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </span>
+      );
+
+    case "PG":
+      return (
+        <span
+          className={`stock-logo-badge ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: "#003cae",
+            color: "#ffffff",
+          }}
+          title="Procter & Gamble"
+        >
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize}>
+            <text
+              x="12"
+              y="16"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="10"
+              fontWeight="800"
+            >
+              P&amp;G
+            </text>
+          </svg>
+        </span>
+      );
+
+    case "MA":
+      return (
+        <span
+          className={`stock-logo-badge ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: "#111827",
+          }}
+          title="Mastercard"
+        >
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize}>
+            <circle cx="9" cy="12" r="6" fill="#eb001b" opacity="0.9" />
+            <circle cx="15" cy="12" r="6" fill="#f79e1b" opacity="0.9" />
+          </svg>
+        </span>
+      );
+
+    case "HD":
+      return (
+        <span
+          className={`stock-logo-badge ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: "#f96302",
+            color: "#ffffff",
+          }}
+          title="The Home Depot"
+        >
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize}>
+            <text
+              x="12"
+              y="16"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="11"
+              fontWeight="900"
+            >
+              HD
+            </text>
+          </svg>
+        </span>
+      );
+
+    case "UNH":
+      return (
+        <span
+          className={`stock-logo-badge ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: "#002677",
+            color: "#ffffff",
+          }}
+          title="UnitedHealth Group"
+        >
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize}>
+            <path
+              d="M12 3L4 7v6c0 5 8 8 8 8s8-3 8-8V7l-8-4z"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2"
+            />
+            <path d="M12 8v8M8 12h8" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </span>
+      );
+
+    case "BAC":
+      return (
+        <span
+          className={`stock-logo-badge ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: "#ffffff",
+            border: "1px solid #e2e8f0",
+          }}
+          title="Bank of America"
+        >
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize}>
+            <rect x="3" y="6" width="8" height="4" fill="#002d72" />
+            <rect x="3" y="14" width="8" height="4" fill="#002d72" />
+            <rect x="13" y="6" width="8" height="4" fill="#e31837" />
+            <rect x="13" y="14" width="8" height="4" fill="#e31837" />
+          </svg>
+        </span>
+      );
+
+    case "LLY":
+      return (
+        <span
+          className={`stock-logo-badge ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: "#d51900",
+            color: "#ffffff",
+          }}
+          title="Eli Lilly and Company"
+        >
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize}>
+            <text
+              x="12"
+              y="16"
+              textAnchor="middle"
+              fill="#ffffff"
+              fontSize="9"
+              fontWeight="800"
+              fontStyle="italic"
+            >
+              Lilly
+            </text>
+          </svg>
+        </span>
+      );
+
+    case "AVGO":
+      return (
+        <span
+          className={`stock-logo-badge ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: "#cc092f",
+            color: "#ffffff",
+          }}
+          title="Broadcom Inc."
+        >
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize}>
+            <circle cx="12" cy="12" r="3" fill="#ffffff" />
+            <path
+              d="M5 12a7 7 0 0 1 14 0M2 12a10 10 0 0 1 20 0"
+              stroke="#ffffff"
+              strokeWidth="2"
+              fill="none"
+              strokeLinecap="round"
+            />
+          </svg>
+        </span>
+      );
+
+    case "COST":
+      return (
+        <span
+          className={`stock-logo-badge ${className}`}
+          style={{
+            width: size,
+            height: size,
+            background: "#005dab",
+            color: "#ffffff",
+          }}
+          title="Costco Wholesale"
+        >
+          <svg viewBox="0 0 24 24" width={iconSize} height={iconSize}>
+            <text
+              x="12"
+              y="15"
+              textAnchor="middle"
+              fill="#e31837"
+              fontSize="8"
+              fontWeight="900"
+              letterSpacing="0.5"
+            >
+              COST
+            </text>
+          </svg>
+        </span>
+      );
+
     default:
       return (
         <span
