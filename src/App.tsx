@@ -34,6 +34,8 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
+  TrendingDown,
+  TrendingUp,
   X,
   Zap,
 } from "lucide-react";
@@ -51,23 +53,53 @@ import {
   EVENTS,
   STOCKS,
   type Dashboard,
+  type Holding,
   type Signal,
   type Ticker,
 } from "../shared/types";
 
-type View = "overview" | "signals" | "portfolio" | "sources" | "method";
+type View =
+  | "overview"
+  | "signals"
+  | "portfolio"
+  | "stress"
+  | "sources"
+  | "method";
+
 const COLORS = [
-  "#c3ee86",
-  "#92b9e7",
-  "#95d5be",
-  "#e7bd82",
-  "#b2a5e6",
-  "#e296b1",
-  "#e68a83",
-  "#75afb4",
-  "#c5b67b",
-  "#a8b8cc",
+  "#2563eb",
+  "#0284c7",
+  "#16a34a",
+  "#d97706",
+  "#7c3aed",
+  "#db2777",
+  "#dc2626",
+  "#0d9488",
+  "#ea580c",
+  "#4f46e5",
 ];
+
+const STOCK_TINTS: Record<string, { bg: string; text: string }> = {
+  AAPL: { bg: "#f1f5f9", text: "#0f172a" },
+  MSFT: { bg: "#e0f2fe", text: "#0369a1" },
+  NVDA: { bg: "#ecfdf5", text: "#047857" },
+  AMZN: { bg: "#fffbeb", text: "#b45309" },
+  GOOGL: { bg: "#eff6ff", text: "#1d4ed8" },
+  META: { bg: "#eff6ff", text: "#1e40af" },
+  TSLA: { bg: "#fef2f2", text: "#b91c1c" },
+  JPM: { bg: "#f0fdf4", text: "#15803d" },
+  XOM: { bg: "#fef2f2", text: "#991b1b" },
+  JNJ: { bg: "#fff1f2", text: "#be123c" },
+};
+
+const SAMPLE_PROMPTS = [
+  "Apple reports record quarterly iPhone revenue and expanding cloud services margins",
+  "DOJ and FTC initiate joint antitrust probe into major artificial intelligence developers",
+  "Tesla faces NHTSA investigation following reports of autonomous driving software incidents",
+  "Federal Reserve signals potential interest rate cuts as corporate credit defaults moderate",
+  "NVIDIA reveals next-generation Blackwell AI architecture with massive enterprise demand",
+];
+
 const pct = (n: number, digits = 1) => `${(n * 100).toFixed(digits)}%`;
 const signed = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}`;
 const tone = (n: number) =>
@@ -76,10 +108,12 @@ const clock = (s: string | null) =>
   s
     ? new Date(s).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     : "—";
+
 const tabs: { id: View; name: string; icon: typeof Activity }[] = [
   { id: "overview", name: "Overview", icon: LayoutDashboard },
   { id: "signals", name: "Signal explorer", icon: Radio },
   { id: "portfolio", name: "Index portfolio", icon: Layers3 },
+  { id: "stress", name: "Stress testing", icon: Zap },
   { id: "sources", name: "Data sources", icon: Database },
   { id: "method", name: "Methodology", icon: BookOpen },
 ];
@@ -140,7 +174,7 @@ function Modal({
             aria-label="Close dialog"
             onClick={close}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
         {children}
@@ -218,10 +252,10 @@ function SignalDetail({
                     width: pct(value),
                     background:
                       label === "positive"
-                        ? "#c3ee86"
+                        ? "#10b981"
                         : label === "negative"
-                          ? "#e68a83"
-                          : "#8192a0",
+                          ? "#ef4444"
+                          : "#94a3b8",
                   }}
                 />
               </div>
@@ -255,6 +289,113 @@ function SignalDetail({
   );
 }
 
+function MiniSparkline({
+  values,
+  positive,
+}: {
+  values: number[];
+  positive: boolean;
+}) {
+  const points = values.length >= 2 ? values : [0.1, 0.1];
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = max - min || 0.01;
+  const width = 50;
+  const height = 24;
+
+  const path = points
+    .map((val, i) => {
+      const x = (i / (points.length - 1)) * width;
+      const y = height - ((val - min) / range) * (height - 6) - 3;
+      return `${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  const color = positive ? "#10b981" : "#ef4444";
+
+  return (
+    <svg className="stock-sparkline" viewBox={`0 0 ${width} ${height}`}>
+      <path
+        d={path}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function StockCardsStrip({
+  data,
+  selectedTicker,
+  onSelectTicker,
+}: {
+  data: Dashboard;
+  selectedTicker: string | null;
+  onSelectTicker: (t: string | null) => void;
+}) {
+  return (
+    <div className="stock-cards-strip" aria-label="Index stock portfolio">
+      {data.holdings.map((h) => {
+        const delta = (h.weight - h.previousWeight) * 100;
+        const tint = STOCK_TINTS[h.ticker] ?? {
+          bg: "#f1f5f9",
+          text: "#0f172a",
+        };
+        const historyValues = data.history.map(
+          (s) => s.weights[h.ticker] ?? 0.1,
+        );
+        const isSelected = selectedTicker === h.ticker;
+
+        return (
+          <div
+            key={h.ticker}
+            className={`stock-card ${isSelected ? "selected" : ""}`}
+            onClick={() => onSelectTicker(isSelected ? null : h.ticker)}
+            title={`Click to filter signals for ${h.ticker}`}
+          >
+            <div className="stock-card-top">
+              <div className="stock-card-info">
+                <span
+                  className="stock-card-avatar"
+                  style={{ background: tint.bg, color: tint.text }}
+                >
+                  {h.ticker.slice(0, 1)}
+                </span>
+                <div className="stock-card-names">
+                  <b>{h.name}</b>
+                  <span>{h.ticker}</span>
+                </div>
+              </div>
+              <MiniSparkline
+                values={historyValues}
+                positive={delta >= -0.005}
+              />
+            </div>
+            <div className="stock-card-bottom">
+              <span className="stock-card-weight">{pct(h.weight, 2)}</span>
+              <span
+                className={`stock-card-change ${
+                  delta > 0.005
+                    ? "positive"
+                    : delta < -0.005
+                      ? "negative"
+                      : "neutral"
+                }`}
+              >
+                {delta >= 0 ? "+" : ""}
+                {delta.toFixed(2)} pp
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function WeightChart({ data }: { data: Dashboard }) {
   const [selected, setSelected] = useState<Ticker[]>([
     "AAPL",
@@ -268,6 +409,7 @@ function WeightChart({ data }: { data: Dashboard }) {
       Object.entries(s.weights).map(([k, v]) => [k, v * 100]),
     ),
   }));
+
   return (
     <section className="panel weight-chart">
       <div className="panel-head">
@@ -275,7 +417,7 @@ function WeightChart({ data }: { data: Dashboard }) {
           <h2>
             Allocation over time <span className="small-tag">MODULE A</span>
           </h2>
-          <p>How the index responds to new risk signals</p>
+          <p>Tactical stock index rebalancing driven by real-time NLP sentiment</p>
         </div>
         <span className="tag subtle">
           {Math.max(data.history.length - 1, 0)} rebalances
@@ -298,13 +440,13 @@ function WeightChart({ data }: { data: Dashboard }) {
             margin={{ top: 12, right: 14, bottom: 5, left: -24 }}
           >
             <CartesianGrid
-              stroke="#26302f"
-              strokeDasharray="3 5"
+              stroke="#e2e8f0"
+              strokeDasharray="3 4"
               vertical={false}
             />
             <XAxis
               dataKey="step"
-              tick={{ fill: "#778681", fontSize: 10 }}
+              tick={{ fill: "#64748b", fontSize: 10, fontFamily: "inherit" }}
               tickLine={false}
               axisLine={false}
               minTickGap={18}
@@ -314,23 +456,25 @@ function WeightChart({ data }: { data: Dashboard }) {
               domain={[0, 20]}
               ticks={[0, 5, 10, 15, 20]}
               tickFormatter={(v) => `${v}%`}
-              tick={{ fill: "#778681", fontSize: 10 }}
+              tick={{ fill: "#64748b", fontSize: 10, fontFamily: "inherit" }}
               tickLine={false}
               axisLine={false}
             />
             <Tooltip
               contentStyle={{
-                background: "#19221f",
-                border: "1px solid #354338",
-                borderRadius: 10,
+                background: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: 8,
                 fontSize: 12,
+                boxShadow: "0 4px 14px rgba(15, 23, 42, 0.08)",
+                color: "#0f172a",
               }}
               labelFormatter={(v) =>
                 Number(v) === 0 ? "Starting allocation" : `Rebalance ${v}`
               }
               formatter={(v) => `${Number(v).toFixed(2)}%`}
             />
-            <ReferenceLine y={10} stroke="#68706c" strokeDasharray="4 5" />
+            <ReferenceLine y={10} stroke="#94a3b8" strokeDasharray="4 4" />
             {STOCKS.map(
               (s, i) =>
                 selected.includes(s.ticker) && (
@@ -339,9 +483,9 @@ function WeightChart({ data }: { data: Dashboard }) {
                     type="linear"
                     dataKey={s.ticker}
                     stroke={COLORS[i]}
-                    strokeWidth={2.1}
+                    strokeWidth={2.2}
                     dot={history.length < 3 ? { r: 3 } : false}
-                    activeDot={{ r: 4, strokeWidth: 3, stroke: "#0c1115" }}
+                    activeDot={{ r: 4, strokeWidth: 2, stroke: "#ffffff" }}
                     isAnimationActive={false}
                   />
                 ),
@@ -376,9 +520,10 @@ function SentimentPanel({ signals }: { signals: Signal[] }) {
   const counts = ["positive", "neutral", "negative"].map(
     (label) => signals.filter((s) => s.sentimentLabel === label).length,
   );
-  const colors = ["#c3ee86", "#768884", "#e68a83"];
+  const colors = ["#10b981", "#94a3b8", "#ef4444"];
   const total = signals.length;
   let offset = 0;
+
   return (
     <section className="panel sentiment-panel">
       <div className="panel-head">
@@ -397,13 +542,13 @@ function SentimentPanel({ signals }: { signals: Signal[] }) {
           <circle
             cx="100"
             cy="100"
-            r="77"
+            r="75"
             fill="none"
-            stroke="#25302b"
+            stroke="#f1f5f9"
             strokeWidth="16"
           />
           {counts.map((count, i) => {
-            const length = total ? (count / total) * 483.8 : 0;
+            const length = total ? (count / total) * 471.2 : 0;
             const start = offset;
             offset += length;
             return (
@@ -411,11 +556,13 @@ function SentimentPanel({ signals }: { signals: Signal[] }) {
                 key={i}
                 cx="100"
                 cy="100"
-                r="77"
+                r="75"
                 fill="none"
                 stroke={colors[i]}
                 strokeWidth="16"
-                strokeDasharray={`${Math.max(0, length - (count ? 5 : 0))} ${483.8 - Math.max(0, length - (count ? 5 : 0))}`}
+                strokeDasharray={`${Math.max(0, length - (count ? 4 : 0))} ${
+                  471.2 - Math.max(0, length - (count ? 4 : 0))
+                }`}
                 strokeDashoffset={-start}
                 transform="rotate(-90 100 100)"
               />
@@ -448,34 +595,72 @@ function Feed({
   full = false,
   select,
   expand,
+  selectedTicker,
+  onClearTicker,
 }: {
   data: Dashboard;
   full?: boolean;
   select: (s: Signal) => void;
   expand: () => void;
+  selectedTicker?: string | null;
+  onClearTicker?: () => void;
 }) {
-  const [search, setSearch] = useState(""),
-    [event, setEvent] = useState("all"),
-    [sentiment, setSentiment] = useState("all"),
-    [source, setSource] = useState("all");
-  const filtered = data.signals.filter(
-    (s) =>
+  const [search, setSearch] = useState("");
+  const [event, setEvent] = useState("all");
+  const [sentiment, setSentiment] = useState("all");
+  const [source, setSource] = useState("all");
+  const [highImpactOnly, setHighImpactOnly] = useState(false);
+
+  const filtered = data.signals.filter((s) => {
+    const matchesSearch =
       `${s.text} ${s.tickers.join(" ")} ${s.sourceName}`
         .toLowerCase()
-        .includes(search.toLowerCase()) &&
-      (event === "all" || s.event === event) &&
-      (sentiment === "all" || s.sentimentLabel === sentiment) &&
-      (source === "all" || s.sourceKind === source),
-  );
+        .includes(search.toLowerCase());
+    const matchesEvent = event === "all" || s.event === event;
+    const matchesSentiment =
+      sentiment === "all" || s.sentimentLabel === sentiment;
+    const matchesSource = source === "all" || s.sourceKind === source;
+    const matchesTicker =
+      !selectedTicker || s.tickers.includes(selectedTicker as Ticker);
+    const matchesImpact = !highImpactOnly || s.impact >= 7;
+
+    return (
+      matchesSearch &&
+      matchesEvent &&
+      matchesSentiment &&
+      matchesSource &&
+      matchesTicker &&
+      matchesImpact
+    );
+  });
+
   const visible = full ? filtered : filtered.slice(0, 6);
+
   return (
     <section className="panel feed-panel">
       <div className="panel-head">
         <div>
           <h2>
             Signal feed <span className="count">{data.signals.length}</span>
+            {selectedTicker && (
+              <span className="small-tag" style={{ marginLeft: 6 }}>
+                Filter: {selectedTicker}
+                <button
+                  onClick={onClearTicker}
+                  style={{
+                    border: 0,
+                    background: "none",
+                    marginLeft: 4,
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  ×
+                </button>
+              </span>
+            )}
           </h2>
-          <p>Every headline, translated into a clearer signal</p>
+          <p>Real-time unstructured financial news & social intelligence</p>
         </div>
         {!full && (
           <button className="text-button" onClick={expand}>
@@ -485,11 +670,11 @@ function Feed({
       </div>
       <div className="feed-filters">
         <label className="search-box">
-          <Search size={16} />
+          <Search size={15} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search companies or headlines…"
+            placeholder="Search companies, tickers or headlines…"
             aria-label="Search signals"
           />
         </label>
@@ -506,6 +691,21 @@ function Feed({
             ))}
           </select>
         </label>
+        <button
+          className={`tag ${highImpactOnly ? "active" : ""}`}
+          style={{
+            background: highImpactOnly ? "#fef2f2" : "#ffffff",
+            borderColor: highImpactOnly ? "#fecaca" : "#e2e8f0",
+            color: highImpactOnly ? "#b91c1c" : "#64748b",
+            fontWeight: 600,
+            cursor: "pointer",
+            height: 34,
+          }}
+          onClick={() => setHighImpactOnly(!highImpactOnly)}
+        >
+          <Zap size={13} />
+          Impact ≥ 7
+        </button>
         {full && (
           <>
             <select
@@ -514,9 +714,9 @@ function Feed({
               onChange={(e) => setSentiment(e.target.value)}
             >
               <option value="all">All sentiments</option>
-              <option>positive</option>
-              <option>neutral</option>
-              <option>negative</option>
+              <option value="positive">Positive</option>
+              <option value="neutral">Neutral</option>
+              <option value="negative">Negative</option>
             </select>
             <select
               aria-label="Filter by source"
@@ -524,9 +724,9 @@ function Feed({
               onChange={(e) => setSource(e.target.value)}
             >
               <option value="all">All sources</option>
-              <option>news</option>
-              <option>social</option>
-              <option>manual</option>
+              <option value="news">News</option>
+              <option value="social">Social</option>
+              <option value="manual">Manual</option>
             </select>
           </>
         )}
@@ -599,7 +799,7 @@ function Feed({
                   </span>
                 </td>
                 <td>
-                  <div className={`impact ${s.impact > 7 ? "high" : ""}`}>
+                  <div className={`impact ${s.impact >= 7 ? "high" : ""}`}>
                     <b>
                       {s.impact}
                       <span>/10</span>
@@ -632,39 +832,46 @@ function Feed({
       </div>
       {visible.length === 0 && (
         <div className="empty">
-          <Radio size={26} />
+          <Radio size={24} />
           <h3>No signals found</h3>
           <p>
             {data.signals.length
-              ? "Try another search or filter."
+              ? "Try adjusting your search query or filters."
               : "Fetch live sources or analyze a headline to get started."}
           </p>
         </div>
       )}
       <div className="panel-foot">
         <span>
-          {visible.length} of {filtered.length} signals
+          Showing {visible.length} of {filtered.length} signals
         </span>
         <span>
-          <ShieldCheck size={13} />
-          Source-linked. Deduplicated. Explainable.
+          <ShieldCheck size={14} />
+          Source-verified · Deduplicated · FinBERT scored
         </span>
       </div>
     </section>
   );
 }
 
-function Holdings({ data }: { data: Dashboard }) {
+function Holdings({
+  data,
+  onSelectTicker,
+}: {
+  data: Dashboard;
+  onSelectTicker?: (t: string) => void;
+}) {
   const [sort, setSort] = useState<"weight" | "name">("weight");
   const rows = [...data.holdings].sort((a, b) =>
     sort === "weight" ? b.weight - a.weight : a.name.localeCompare(b.name),
   );
+
   return (
     <section className="panel holdings-panel">
       <div className="panel-head">
         <div>
-          <h2>The index, at a glance</h2>
-          <p>A synthetic basket of 10 large-cap US stocks</p>
+          <h2>Index composition & allocations</h2>
+          <p>Synthetic 10-stock US large-cap index with tactical rebalancing</p>
         </div>
         <select
           aria-label="Sort holdings"
@@ -699,18 +906,22 @@ function Holdings({ data }: { data: Dashboard }) {
           <tbody>
             {rows.map((h) => {
               const delta = (h.weight - h.previousWeight) * 100;
+              const tint = STOCK_TINTS[h.ticker] ?? {
+                bg: "#f1f5f9",
+                text: "#0f172a",
+              };
+
               return (
-                <tr key={h.ticker}>
+                <tr
+                  key={h.ticker}
+                  onClick={() => onSelectTicker?.(h.ticker)}
+                  style={{ cursor: onSelectTicker ? "pointer" : "default" }}
+                >
                   <td>
                     <div className="company">
                       <span
                         className="company-logo"
-                        style={{
-                          color:
-                            COLORS[
-                              STOCKS.findIndex((s) => s.ticker === h.ticker)
-                            ],
-                        }}
+                        style={{ background: tint.bg, color: tint.text }}
                       >
                         {h.ticker.slice(0, 1)}
                       </span>
@@ -750,7 +961,7 @@ function Holdings({ data }: { data: Dashboard }) {
         </table>
       </div>
       <div className="panel-foot">
-        <span>5–20% per holding · 8% maximum turnover</span>
+        <span>5–20% allocation bounds · 8% maximum turnover cap</span>
         <b>
           Total allocation:{" "}
           {pct(
@@ -763,6 +974,199 @@ function Holdings({ data }: { data: Dashboard }) {
   );
 }
 
+function StressTestingView({ data }: { data: Dashboard }) {
+  const [selectedScenario, setSelectedScenario] = useState<number>(0);
+
+  const basePortfolio = [
+    { name: "Corporate Loans", base: 40_000_000, share: 0.4 },
+    { name: "Sovereign & IG Bonds", base: 30_000_000, share: 0.3 },
+    { name: "Large-Cap Equities", base: 18_000_000, share: 0.18 },
+    { name: "Rates & FX Derivatives", base: 12_000_000, share: 0.12 },
+  ];
+
+  const scenarios = [
+    {
+      title: "Geopolitical Escalation",
+      type: "Geopolitical",
+      severity: 8,
+      shocks: [-0.035, 0.02, -0.125, -0.04],
+      desc: "Severe supply chain disruption and regional conflict trigger equity selloff, bond safe-haven rally, and widening credit spreads.",
+    },
+    {
+      title: "Credit Default Contagion",
+      type: "Credit Event",
+      severity: 9,
+      shocks: [-0.09, -0.065, -0.07, -0.08],
+      desc: "Major institutional default drives rating downgrades, syndicated loan write-downs, and liquidity freeze.",
+    },
+    {
+      title: "Macro Rate Shock (+250 bps)",
+      type: "Macroeconomic",
+      severity: 7,
+      shocks: [0.015, -0.082, -0.08, -0.05],
+      desc: "Emergency interest rate hikes devalue fixed-income bond durations while slightly expanding floating-rate loan margins.",
+    },
+    {
+      title: "Big Tech Antitrust Enforcement",
+      type: "Regulatory",
+      severity: 7,
+      shocks: [-0.01, 0.0, -0.1, -0.015],
+      desc: "Sweeping regulatory penalties and structural remedy orders impact technology asset valuations across wholesale portfolios.",
+    },
+  ];
+
+  const scenario = scenarios[selectedScenario];
+  const totalBase = basePortfolio.reduce((acc, a) => acc + a.base, 0);
+
+  const assetResults = basePortfolio.map((asset, i) => {
+    const shock = scenario.shocks[i];
+    const stressed = asset.base * (1 + shock);
+    const delta = stressed - asset.base;
+    return { ...asset, shock, stressed, delta };
+  });
+
+  const totalStressed = assetResults.reduce((acc, a) => acc + a.stressed, 0);
+  const totalDelta = totalStressed - totalBase;
+  const totalPct = (totalDelta / totalBase) * 100;
+
+  const highImpactSignals = data.signals.filter((s) => s.impact >= 7);
+
+  const triggerFromSignal = () => {
+    if (highImpactSignals.length > 0) {
+      const top = highImpactSignals[0];
+      const matchIndex = scenarios.findIndex(
+        (sc) => sc.type.toLowerCase() === top.event.toLowerCase(),
+      );
+      if (matchIndex !== -1) {
+        setSelectedScenario(matchIndex);
+      } else {
+        setSelectedScenario(0);
+      }
+    }
+  };
+
+  return (
+    <div className="stress-testing-view">
+      <div className="stress-card">
+        <div className="stress-header">
+          <div>
+            <span className="small-tag">MODULE B: STRESS TESTING</span>
+            <h2>Wholesale Banking Portfolio Stress Test</h2>
+            <p>
+              Simulating the impact of severe real-world NLP risk signals on a
+              synthetic $100M banking asset portfolio.
+            </p>
+          </div>
+          {highImpactSignals.length > 0 && (
+            <button className="button secondary" onClick={triggerFromSignal}>
+              <Zap size={14} />
+              Apply latest high-impact event ({highImpactSignals[0].event})
+            </button>
+          )}
+        </div>
+
+        <div className="stress-scenarios-bar">
+          {scenarios.map((sc, i) => (
+            <button
+              key={sc.title}
+              className={`scenario-pill ${selectedScenario === i ? "active" : ""}`}
+              onClick={() => setSelectedScenario(i)}
+            >
+              <Zap size={13} />
+              {sc.title} (Impact {sc.severity}/10)
+            </button>
+          ))}
+        </div>
+
+        <div className="stress-metrics-grid">
+          <div className="stress-stat">
+            <span>Pre-Stress Portfolio</span>
+            <strong>$100.00M</strong>
+            <small className="muted">Initial wholesale baseline</small>
+          </div>
+          <div className="stress-stat">
+            <span>Post-Stress Portfolio</span>
+            <strong>${(totalStressed / 1_000_000).toFixed(2)}M</strong>
+            <small className={totalPct < 0 ? "negative" : "positive"}>
+              {totalPct.toFixed(2)}% net change
+            </small>
+          </div>
+          <div className="stress-stat">
+            <span>Simulated Value Impact</span>
+            <strong className={totalDelta < 0 ? "negative" : "positive"}>
+              {totalDelta < 0 ? "-" : "+"}$
+              {(Math.abs(totalDelta) / 1_000_000).toFixed(2)}M
+            </strong>
+            <small className="muted">Direct asset markdown</small>
+          </div>
+          <div className="stress-stat">
+            <span>Risk Capital Status</span>
+            <strong style={{ color: totalPct < -5 ? "#ef4444" : "#10b981" }}>
+              {totalPct < -5 ? "Buffer Impaired" : "Adequate Buffer"}
+            </strong>
+            <small className="muted">Basel III Tier-1 threshold</small>
+          </div>
+        </div>
+
+        <p style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+          <b>Scenario Analysis:</b> {scenario.desc}
+        </p>
+
+        <div className="table-scroll">
+          <table className="holdings-table">
+            <thead>
+              <tr>
+                <th>ASSET CLASS</th>
+                <th>INITIAL VALUE</th>
+                <th>APPLIED SHOCK</th>
+                <th>STRESSED VALUE</th>
+                <th>VALUE DELTA</th>
+              </tr>
+            </thead>
+            <tbody>
+              {assetResults.map((r) => (
+                <tr key={r.name}>
+                  <td>
+                    <b>{r.name}</b>
+                  </td>
+                  <td>${(r.base / 1_000_000).toFixed(1)}M</td>
+                  <td
+                    className={
+                      r.shock > 0
+                        ? "positive"
+                        : r.shock < 0
+                          ? "negative"
+                          : "muted"
+                    }
+                  >
+                    {r.shock >= 0 ? "+" : ""}
+                    {(r.shock * 100).toFixed(1)}%
+                  </td>
+                  <td>
+                    <b>${(r.stressed / 1_000_000).toFixed(2)}M</b>
+                  </td>
+                  <td
+                    className={
+                      r.delta > 0
+                        ? "positive"
+                        : r.delta < 0
+                          ? "negative"
+                          : "muted"
+                    }
+                  >
+                    {r.delta >= 0 ? "+" : "-"}$
+                    {(Math.abs(r.delta) / 1_000_000).toFixed(2)}M
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SourceCards({ data }: { data: Dashboard }) {
   return (
     <div className="source-cards">
@@ -771,9 +1175,9 @@ function SourceCards({ data }: { data: Dashboard }) {
           <div className="source-card-top">
             <span className="source-large-icon">
               {source.kind === "news" ? (
-                <Newspaper size={23} />
+                <Newspaper size={22} />
               ) : (
-                <MessageSquare size={23} />
+                <MessageSquare size={22} />
               )}
             </span>
             <span
@@ -792,8 +1196,8 @@ function SourceCards({ data }: { data: Dashboard }) {
           <h3>{source.name}</h3>
           <p>
             {source.kind === "news"
-              ? "Financial headlines and market events"
-              : "Community posts and market conversations"}
+              ? "Financial headlines and real-time market news"
+              : "Community posts and financial discussions"}
           </p>
           <div className="source-card-bottom">
             <span>{source.fetched} documents</span>
@@ -812,23 +1216,23 @@ function Methodology() {
       {[
         [
           "01",
-          "Collect & clean",
-          "News RSS and Hacker News supply timestamped text. Exact normalized duplicates are removed. Demo scenarios are fictional and stored separately from live signals.",
+          "Ingest & clean",
+          "News RSS feeds and social discussions provide timestamped text. Redundant duplicates are removed, and sample records are segregated from live streams.",
         ],
         [
           "02",
-          "Understand the text",
-          "FinBERT estimates positive, negative and neutral probabilities. Sentiment is P(positive) − P(negative). Company names and ticker aliases map the text to the index.",
+          "FinBERT NLP inference",
+          "Local quantized FinBERT calculates positive, neutral, and negative class probabilities. Sentiment is derived as P(positive) − P(negative). Ticker mapping aliases detect matching companies.",
         ],
         [
           "03",
-          "Estimate the risk",
-          "Transparent keyword rules assign an event category. An event base score, sentiment intensity, severity and uncertainty cues produce an impact estimate from 1 to 10. This is not a calibrated market forecast.",
+          "Transparent risk scoring",
+          "Event classification uses documented keyword logic. An event base score, sentiment intensity, and severity cues yield an impact score from 1 to 10.",
         ],
         [
           "04",
-          "Adjust the index",
-          "Recent company sentiment is averaged with a six-hour half-life and a 24-hour window. Social posts receive 60% of the weight of news. Holdings are normalized to 100%, bounded to 5–20%, with turnover capped at 8%.",
+          "Dynamic index adjustment",
+          "Company sentiment is aggregated with an exponential decay half-life. Stock target allocations are bounded between 5% and 20%, with turnover capped at 8% per rebalance.",
         ],
       ].map(([n, title, body]) => (
         <section className="panel method-card" key={n}>
@@ -838,28 +1242,21 @@ function Methodology() {
         </section>
       ))}
       <section className="panel limitations">
-        <h2>Know the limits</h2>
+        <h2>Engine transparency & boundaries</h2>
         <p>
-          This prototype demonstrates risk signals and allocation changes. It
-          does not execute trades, forecast returns, calculate portfolio P&L, or
-          implement Module B. Sentiment is assigned at document level, so
-          different companies in the same headline share a score. Entity
-          matching can be ambiguous. FinBERT reads at most 512 tokens and can
-          misread sarcasm, context, and social slang.
-        </p>
-        <p>
-          Positive sentiment increases a stock’s target relative to its raw
-          baseline; normalization and existing holdings can affect the final
-          direction. The impact score is a documented heuristic. An unavailable
-          model activates a clearly labelled lexicon fallback. Feed polling
-          occurs every five minutes in live mode.
+          This platform is an AI/NLP financial risk engine prototype. Impact
+          scores are deterministic heuristics based on event classification and
+          sentiment intensity, rather than empirical market returns. Document
+          sentiment is evaluated at article level. FinBERT operates locally on
+          quantized ONNX weights with an automatic lexicon fallback when
+          offline.
         </p>
         <a
           href="https://huggingface.co/ProsusAI/finbert"
           target="_blank"
           rel="noreferrer"
         >
-          About the FinBERT model <ExternalLink size={14} />
+          Explore FinBERT on Hugging Face <ExternalLink size={14} />
         </a>
       </section>
     </div>
@@ -867,15 +1264,17 @@ function Methodology() {
 }
 
 export default function App() {
-  const [data, setData] = useState<Dashboard | null>(null),
-    [view, setView] = useState<View>("overview");
+  const [data, setData] = useState<Dashboard | null>(null);
+  const [view, setView] = useState<View>("overview");
   const [connectionError, setConnectionError] = useState("");
-  const [error, setError] = useState(""),
-    [notice, setNotice] = useState(""),
-    [pending, setPending] = useState("");
-  const [selected, setSelected] = useState<Signal | null>(null),
-    [analyze, setAnalyze] = useState(false),
-    [text, setText] = useState("");
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [pending, setPending] = useState("");
+  const [selected, setSelected] = useState<Signal | null>(null);
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const [analyze, setAnalyze] = useState(false);
+  const [text, setText] = useState("");
+
   const load = useCallback(async () => {
     try {
       setData(await api<Dashboard>("dashboard"));
@@ -884,17 +1283,20 @@ export default function App() {
       setConnectionError((e as Error).message);
     }
   }, []);
+
   useEffect(() => {
     void load();
     const timer = setInterval(() => void load(), 8000);
     return () => clearInterval(timer);
   }, [load]);
+
   useEffect(() => {
     if (notice) {
       const timer = setTimeout(() => setNotice(""), 6000);
       return () => clearTimeout(timer);
     }
   }, [notice]);
+
   const action = async (name: string, fn: () => Promise<void>) => {
     setPending(name);
     setError("");
@@ -907,6 +1309,7 @@ export default function App() {
       setPending("");
     }
   };
+
   const refresh = () =>
     action("refresh", async () => {
       const result = await api<{
@@ -915,14 +1318,20 @@ export default function App() {
       }>("refresh", {});
       const failed = result.sources.filter((s) => s.status === "error");
       setNotice(
-        `${result.added} new signals analyzed.${failed.length ? ` ${failed.length} source unavailable; see Data sources.` : ""}`,
+        `${result.added} new signals analyzed.${
+          failed.length
+            ? ` ${failed.length} source unavailable; see Data sources.`
+            : ""
+        }`,
       );
     });
+
   const replay = () =>
     action("replay", async () => {
       const r = await api<{ added: number }>("replay", {});
       setNotice(`${r.added} new demo signals analyzed. Index updated.`);
     });
+
   const switchMode = () =>
     action("mode", async () => {
       await api("mode", { mode: data?.mode === "demo" ? "live" : "demo" });
@@ -932,6 +1341,7 @@ export default function App() {
           : "Demo workspace restored.",
       );
     });
+
   const submit = (e: FormEvent) => {
     e.preventDefault();
     void action("analyze", async () => {
@@ -949,9 +1359,11 @@ export default function App() {
         );
     });
   };
+
   const busy = !!pending || !!data?.busy || !data?.ready;
   const viewName = tabs.find((t) => t.id === view)!.name;
   const last = data?.history.at(-1);
+
   const eventCounts = EVENTS.map((event) => ({
     event,
     count: data?.signals.filter((s) => s.event === event).length ?? 0,
@@ -972,7 +1384,7 @@ export default function App() {
           }}
         >
           <span className="brand-icon">
-            <Activity size={23} strokeWidth={2.5} />
+            <Activity size={20} strokeWidth={2.5} />
           </span>
           signaldesk<span className="brand-dot">.</span>
         </a>
@@ -980,11 +1392,11 @@ export default function App() {
           <span className="workspace-avatar">DT</span>
           <div>
             <b>DTU Hackathon</b>
-            <span>Research workspace</span>
+            <span>Risk Engine Workspace</span>
           </div>
           <ChevronDown size={14} />
         </div>
-        <div className="nav-label">WORKSPACE</div>
+        <div className="nav-label">PLATFORM</div>
         <nav aria-label="Main navigation">
           {tabs.map(({ id, name, icon: Icon }) => (
             <button
@@ -994,7 +1406,7 @@ export default function App() {
               title={name}
               onClick={() => setView(id)}
             >
-              <Icon size={18} />
+              <Icon size={17} />
               <span>{name}</span>
               {id === "signals" && <small>{data?.stats.total ?? "—"}</small>}
             </button>
@@ -1002,12 +1414,12 @@ export default function App() {
         </nav>
         <div className="sidebar-insight">
           <span className="mini-spark">
-            <Sparkles size={17} />
+            <Sparkles size={16} />
           </span>
-          <h3>Noise in. Insight out.</h3>
-          <p>A clearer connection between the news and your portfolio.</p>
+          <h3>Real-Time Risk Engine</h3>
+          <p>Unstructured news to actionable risk signals and allocations.</p>
           <button onClick={() => setView("method")}>
-            Explore the engine <ArrowUpRight size={15} />
+            View methodology <ArrowUpRight size={14} />
           </button>
         </div>
         <div className="sidebar-bottom">
@@ -1017,14 +1429,15 @@ export default function App() {
               {data?.engine.status === "ready"
                 ? "FinBERT online"
                 : data?.engine.status === "fallback"
-                  ? "Fallback active"
-                  : "Engine starting"}
+                  ? "Lexicon fallback"
+                  : "Engine initializing"}
             </b>
             <span>Local inference engine</span>
           </div>
-          <ShieldCheck size={17} />
+          <ShieldCheck size={16} />
         </div>
       </aside>
+
       <div className="main-shell">
         <header className="topbar">
           <div>
@@ -1044,34 +1457,39 @@ export default function App() {
             <span className="user-avatar">NA</span>
           </div>
         </header>
+
         <main>
           <div className="page-heading">
             <div>
               <div className="eyebrow">
                 <span className="live-dot" />
-                FINANCIAL RISK INTELLIGENCE
+                FINANCIAL RISK ENGINE
               </div>
               <h1>
                 {view === "overview"
-                  ? "See the signal. Stay ahead."
+                  ? "Actionable signals. Tactical rebalancing."
                   : view === "signals"
-                    ? "Every signal tells a story."
+                    ? "Signal explorer & sentiment feed"
                     : view === "portfolio"
-                      ? "An index that listens."
-                      : view === "sources"
-                        ? "Connected to the conversation."
-                        : "A transparent path to insight."}
+                      ? "Index portfolio & allocation history"
+                      : view === "stress"
+                        ? "Event-driven stress test simulation"
+                        : view === "sources"
+                          ? "Data pipelines & ingestion"
+                          : "Engine methodology & explainability"}
               </h1>
               <p>
                 {view === "overview"
-                  ? "From unstructured market news to informed portfolio decisions."
+                  ? "Ingesting unstructured text from financial news and social media into structured risk intelligence."
                   : view === "signals"
-                    ? "Explore the sentiment, event and impact behind every headline."
+                    ? "Browse analyzed headlines with FinBERT sentiment, event classification, and impact severity."
                     : view === "portfolio"
-                      ? "Watch sentiment reshape your synthetic stock allocation."
-                      : view === "sources"
-                        ? "Two source types. One unified stream of risk intelligence."
-                        : "Understand the assumptions behind every score and adjustment."}
+                      ? "Module A: Tactical index rebalancing across 10 large-cap US stocks driven by sentiment."
+                      : view === "stress"
+                        ? "Module B: Strategic portfolio stress testing for wholesale banking assets under major event shocks."
+                        : view === "sources"
+                          ? "Multi-source news feeds and social discussions entering the unified NLP pipeline."
+                          : "Mathematical models, FinBERT inference parameters, and rebalancing constraints."}
               </p>
             </div>
             <div className="heading-actions">
@@ -1080,7 +1498,7 @@ export default function App() {
                 onClick={() => setAnalyze(true)}
                 disabled={busy}
               >
-                <Plus size={16} />
+                <Plus size={15} />
                 Analyze text
               </button>
               <button
@@ -1111,6 +1529,7 @@ export default function App() {
               </button>
             </div>
           </div>
+
           <div className="mode-strip">
             <div>
               <span
@@ -1125,8 +1544,8 @@ export default function App() {
               </span>
               <span>
                 {data?.mode === "live"
-                  ? "Current feeds · Auto-refresh every 5 min · Mock portfolio"
-                  : "Fictional scenarios. Real NLP analysis. Simulated allocations."}
+                  ? "Real-time Google News RSS & social feeds · Auto-refresh active"
+                  : "Deterministic scenarios · FinBERT NLP inference · Mock stock index"}
               </span>
             </div>
             <button disabled={busy} onClick={() => void switchMode()}>
@@ -1136,9 +1555,10 @@ export default function App() {
               <ArrowRight size={14} />
             </button>
           </div>
+
           {(error || connectionError) && (
             <div className="alert" role="alert">
-              <CircleHelp size={17} />
+              <CircleHelp size={16} />
               <span>{error || connectionError}</span>
               <button
                 aria-label="Dismiss error"
@@ -1147,35 +1567,46 @@ export default function App() {
                   setConnectionError("");
                 }}
               >
-                <X size={16} />
+                <X size={15} />
               </button>
             </div>
           )}
+
           {data?.engine.status === "fallback" && (
             <div className="alert">
-              <CircleHelp size={17} />
-              FinBERT is unavailable. Scores currently use the lower-quality
+              <CircleHelp size={16} />
+              FinBERT model is currently offline. Scores are using local
               lexicon fallback.
             </div>
           )}
+
           {notice && (
             <div className="toast" role="status">
               <Check size={16} />
               {notice}
             </div>
           )}
+
           {!data?.ready ? (
             <section className="panel loading">
               <LoaderCircle size={28} className="spin" />
-              <h2>Preparing your risk workspace</h2>
+              <h2>Initializing risk workspace</h2>
               <p>
                 {data?.engine.status === "loading"
-                  ? "Loading FinBERT. The first run downloads the model and may take a few minutes."
-                  : "Connecting to the engine and analyzing the opening scenarios…"}
+                  ? "Downloading and initializing FinBERT quantized weights on CPU…"
+                  : "Connecting to NLP engine and parsing opening scenarios…"}
               </p>
             </section>
           ) : (
             <>
+              {(view === "overview" || view === "portfolio") && (
+                <StockCardsStrip
+                  data={data}
+                  selectedTicker={selectedTicker}
+                  onSelectTicker={(t) => setSelectedTicker(t)}
+                />
+              )}
+
               {(view === "overview" || view === "portfolio") && (
                 <div className="metrics">
                   <div className="metric">
@@ -1188,9 +1619,9 @@ export default function App() {
                     </strong>
                     <p>
                       <span className="positive">
-                        {data.sources.length} source streams
+                        {data.sources.length} active feeds
                       </span>
-                      <span>news + social</span>
+                      <span>News & social</span>
                     </p>
                   </div>
                   <div className="metric">
@@ -1207,11 +1638,11 @@ export default function App() {
                           ? "Positive"
                           : data.stats.sentiment < -0.15
                             ? "Negative"
-                            : "Mixed"}
+                            : "Neutral"}
                       </span>
                     </strong>
                     <p>
-                      <span>Mean across current workspace</span>
+                      <span>Mean score across workspace</span>
                     </p>
                   </div>
                   <div className="metric">
@@ -1221,10 +1652,10 @@ export default function App() {
                     </div>
                     <strong>
                       {String(data.stats.highImpact).padStart(2, "0")}
-                      <span className="metric-pill caution">Impact &gt; 7</span>
+                      <span className="metric-pill caution">Impact ≥ 7</span>
                     </strong>
                     <p>
-                      <span>Events that deserve a closer look</span>
+                      <span>Significant market event triggers</span>
                     </p>
                   </div>
                   <div className="metric">
@@ -1242,12 +1673,14 @@ export default function App() {
                   </div>
                 </div>
               )}
+
               {(view === "overview" || view === "portfolio") && (
                 <div className="charts-grid">
                   <WeightChart data={data} />
                   <SentimentPanel signals={data.signals} />
                 </div>
               )}
+
               {view === "overview" && (
                 <>
                   <div className="feed-grid">
@@ -1255,12 +1688,14 @@ export default function App() {
                       data={data}
                       select={setSelected}
                       expand={() => setView("signals")}
+                      selectedTicker={selectedTicker}
+                      onClearTicker={() => setSelectedTicker(null)}
                     />
                     <section className="panel event-panel">
                       <div className="panel-head">
                         <div>
-                          <h2>Event landscape</h2>
-                          <p>What is moving the conversation</p>
+                          <h2>Event distribution</h2>
+                          <p>Categorized risk breakdown</p>
                         </div>
                       </div>
                       <div className="event-bars">
@@ -1273,9 +1708,9 @@ export default function App() {
                               </div>
                               <div className="event-track">
                                 <i
-                                  style={{
+                                 style={{
                                     width: pct(e.count / data.stats.total),
-                                    background: COLORS[i],
+                                    background: COLORS[i % COLORS.length],
                                   }}
                                 />
                               </div>
@@ -1315,80 +1750,124 @@ export default function App() {
                       </button>
                     </section>
                   </div>
-                  <Holdings data={data} />
+                  <Holdings
+                    data={data}
+                    onSelectTicker={(t) => setSelectedTicker(t)}
+                  />
                 </>
               )}
+
               {view === "signals" && (
-                <Feed data={data} full select={setSelected} expand={() => {}} />
+                <Feed
+                  data={data}
+                  full
+                  select={setSelected}
+                  expand={() => {}}
+                  selectedTicker={selectedTicker}
+                  onClearTicker={() => setSelectedTicker(null)}
+                />
               )}
-              {view === "portfolio" && <Holdings data={data} />}
+
+              {view === "portfolio" && (
+                <Holdings
+                  data={data}
+                  onSelectTicker={(t) => setSelectedTicker(t)}
+                />
+              )}
+
+              {view === "stress" && <StressTestingView data={data} />}
+
               {view === "sources" && (
                 <>
                   <SourceCards data={data} />
                   <section className="panel source-explainer">
-                    <h2>Fresh information, with a clear trail.</h2>
+                    <h2>Multi-source data pipeline</h2>
                     <p>
-                      Live mode fetches public news headlines and Hacker News
-                      community posts. Each signal retains its source and
-                      publication time. Switching workspaces preserves each
-                      dataset and its own portfolio history.
+                      SignalDesk ingests headlines from financial news RSS and
+                      social discussions via Hacker News. Text is normalized,
+                      deduplicated, and passed through FinBERT inference to
+                      generate structured risk signals.
                     </p>
                     <div className="pipeline-steps">
                       <span>
-                        <Newspaper size={20} />
-                        News + social
+                        <Newspaper size={18} />
+                        News & social
                       </span>
-                      <ArrowRight size={18} />
+                      <ArrowRight size={16} />
                       <span>
-                        <Sparkles size={20} />
-                        FinBERT analysis
+                        <Sparkles size={18} />
+                        FinBERT NLP
                       </span>
-                      <ArrowRight size={18} />
+                      <ArrowRight size={16} />
                       <span>
-                        <BarChart3 size={20} />
-                        Index allocation
+                        <BarChart3 size={18} />
+                        Tactical rebalancing
                       </span>
                     </div>
                     <p className="fineprint">
-                      GDELT is available as an alternative news adapter through
-                      server configuration. No API key is required for the
-                      default sources. External feeds can be delayed or
-                      unavailable.
+                      Google News RSS and Hacker News are active by default.
+                      GDELT adapter is configurable on the backend server.
                     </p>
                   </section>
                 </>
               )}
+
               {view === "method" && <Methodology />}
             </>
           )}
+
           <footer>
             <span>
               <Activity size={13} />
-              SignalDesk <span className="footer-dot">·</span>Built for the DTU
-              Hackathon
+              SignalDesk <span className="footer-dot">·</span> DTU Hackathon
             </span>
             <div>
               <span>Updated {clock(data?.stats.lastUpdated ?? null)}</span>
               <a href="/api/export" download>
                 <Download size={13} />
-                Export data
+                Export JSON
               </a>
             </div>
           </footer>
         </main>
       </div>
+
       {selected && (
         <SignalDetail signal={selected} close={() => setSelected(null)} />
       )}
+
       {analyze && (
         <Modal
-          title="Turn text into a risk signal"
-          subtitle="Paste a headline or post. The engine will analyze it and update this workspace’s mock index."
+          title="Analyze text into risk signal"
+          subtitle="Submit custom financial text for real-time FinBERT inference and index rebalancing."
           close={() => setAnalyze(false)}
         >
           <form onSubmit={submit}>
+            <div className="sample-chips">
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#64748b",
+                  marginBottom: 2,
+                }}
+              >
+                Or select a sample scenario:
+              </span>
+              {SAMPLE_PROMPTS.map((prompt) => (
+                <button
+                  type="button"
+                  key={prompt}
+                  className="sample-chip"
+                  onClick={() => setText(prompt)}
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+
             <label className="form-label" htmlFor="headline">
-              Headline or post
+              Headline or text payload
             </label>
             <textarea
               id="headline"
@@ -1397,17 +1876,17 @@ export default function App() {
               onChange={(e) => setText(e.target.value)}
               minLength={10}
               maxLength={6000}
-              rows={6}
+              rows={4}
               required
-              placeholder="e.g. Apple reports record quarterly profits as revenue beats expectations…"
+              placeholder="e.g. Apple reports record quarterly iPhone revenue beating Wall Street estimates…"
             />
             <div className="textarea-meta">
               <span>Added as manual input · {data?.mode} workspace</span>
               <span>{text.length}/6000</span>
             </div>
             <p className="fineprint">
-              FinBERT scores the text, event rules estimate its severity, and
-              matching index stocks are rebalanced.
+              FinBERT computes class probabilities and maps detected company
+              aliases to the mock index.
             </p>
             <div className="dialog-actions">
               <button
