@@ -47,6 +47,16 @@ export const BASE_STOCK_PRICES: Record<string, number> = {
   JPM: 221.4,
   XOM: 118.9,
   JNJ: 161.75,
+  V: 285.5,
+  WMT: 80.25,
+  PG: 172.4,
+  MA: 495.8,
+  HD: 412.3,
+  UNH: 585.6,
+  BAC: 41.9,
+  LLY: 912.4,
+  AVGO: 174.8,
+  COST: 898.2,
 };
 
 function formatTime(d: Date): string {
