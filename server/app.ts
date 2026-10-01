@@ -38,6 +38,7 @@ export function createApp(service: RiskService) {
   );
   app.get("/api/dashboard", (_req, res) => res.json(service.dashboard()));
   app.get("/api/signals", (_req, res) => res.json(service.dashboard().signals));
+  app.get("/api/market-flow", (_req, res) => res.json(service.marketFlow()));
   app.get("/api/export", (_req, res) =>
     res
       .attachment(`signaldesk-${service.mode}.json`)
