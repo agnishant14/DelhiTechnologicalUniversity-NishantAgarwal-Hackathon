@@ -76,6 +76,7 @@ import {
   type MarketTick,
   type StockLiveState,
 } from "./liveMarket";
+import { StockLogo } from "./StockLogo";
 
 type View =
   | "overview"
@@ -996,12 +997,7 @@ export default function App() {
                     >
                       <div className="portfolio-card-top">
                         <div className="portfolio-card-brand">
-                          <span
-                            className="stock-icon-circle"
-                            style={{ background: meta.bg, color: meta.color }}
-                          >
-                            {meta.initial}
-                          </span>
+                          <StockLogo ticker={stk.ticker} size={34} />
                           <div>
                             <b>{meta.name}</b>
                           </div>
@@ -1041,17 +1037,7 @@ export default function App() {
                 <div className="hero-chart-card">
                   <div className="hero-chart-header">
                     <div className="hero-chart-stock-info">
-                      <span
-                        className="hero-stock-avatar"
-                        style={{
-                          background:
-                            STOCK_META[selectedStock]?.bg ?? "#000000",
-                          color:
-                            STOCK_META[selectedStock]?.color ?? "#ffffff",
-                        }}
-                      >
-                        {STOCK_META[selectedStock]?.initial ?? selectedStock[0]}
-                      </span>
+                      <StockLogo ticker={selectedStock} size={44} />
                       <div className="hero-stock-titles">
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <h3>
@@ -1535,12 +1521,7 @@ export default function App() {
                           onClick={() => setSelectedStock(stk.ticker)}
                         >
                           <div className="watchlist-item-left">
-                            <span
-                              className="watchlist-item-avatar"
-                              style={{ background: meta.bg, color: meta.color }}
-                            >
-                              {meta.initial}
-                            </span>
+                            <StockLogo ticker={stk.ticker} size={32} />
                             <div className="watchlist-item-names">
                               <b>{stk.ticker}</b>
                               <span>{meta.name}</span>
@@ -1934,7 +1915,12 @@ export default function App() {
                     {flowData.stockFlows.map((sf) => (
                       <tr key={sf.ticker}>
                         <td>
-                          <b>{sf.name}</b> ({sf.ticker})
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <StockLogo ticker={sf.ticker} size={22} />
+                            <div>
+                              <b>{sf.name}</b> ({sf.ticker})
+                            </div>
+                          </div>
                         </td>
                         <td>
                           <b
@@ -2186,7 +2172,12 @@ export default function App() {
                       return (
                         <tr key={h.ticker}>
                           <td>
-                            <b>{h.name}</b> ({h.ticker})
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <StockLogo ticker={h.ticker} size={22} />
+                              <div>
+                                <b>{h.name}</b> ({h.ticker})
+                              </div>
+                            </div>
                           </td>
                           <td>{h.sector}</td>
                           <td>
