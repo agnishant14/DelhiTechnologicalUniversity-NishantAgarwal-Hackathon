@@ -9,6 +9,42 @@
     "license": "MIT",
     "timestamps": "Generated at runtime, one minute apart from the saved demo anchor. They are simulation times, not historical publication dates."
   },
+  "largeDataset": {
+    "path": "data/financial_dataset.json",
+    "type": "multi-source-benchmark",
+    "records": 923,
+    "sources": [
+      {
+        "name": "zeroshot/twitter-financial-news-sentiment",
+        "platform": "Hugging Face",
+        "url": "https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment",
+        "records": 399,
+        "type": "social"
+      },
+      {
+        "name": "ashraq/financial-news",
+        "platform": "Hugging Face",
+        "url": "https://huggingface.co/datasets/ashraq/financial-news",
+        "records": 300,
+        "type": "news"
+      },
+      {
+        "name": "Jean-Baptiste/financial_news_sentiment",
+        "platform": "Hugging Face",
+        "url": "https://huggingface.co/datasets/Jean-Baptiste/financial_news_sentiment",
+        "records": 200,
+        "type": "news"
+      },
+      {
+        "name": "kaggle/financial-news-headlines",
+        "platform": "Kaggle",
+        "url": "https://www.kaggle.com/datasets/ankurzing/sentiment-analysis-for-financial-news",
+        "records": 24,
+        "type": "news"
+      }
+    ],
+    "description": "Comprehensive multi-source financial benchmark dataset extracted from Hugging Face and Kaggle covering the 20 S&P 100 constituents, earnings reports, regulatory decisions, central bank releases, and credit events."
+  },
   "liveSources": [
     {
       "name": "Google News RSS",
