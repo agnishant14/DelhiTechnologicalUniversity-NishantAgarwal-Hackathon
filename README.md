@@ -57,12 +57,12 @@ Event bases: credit 7; geopolitical 6; regulatory/macro/M&A 5; operational 4; ea
 
 ### Module A: allocation policy
 
-The index contains AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, JPM, XOM, and JNJ, initially at 10% each.
+The index contains 20 prominent S&P 100 constituents: AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, JPM, XOM, JNJ, V, WMT, PG, MA, HD, UNH, BAC, LLY, AVGO, and COST, initially at 5% each.
 
 1. Use company-matched signals published within the last 24 hours; ignore future timestamps.
 2. Apply exponential decay with a six-hour half-life. Social posts receive a 0.6 multiplier; news and manual text receive 1.0.
-3. Compute each company's weighted mean sentiment `s` and raw target `0.10 × (1 + 0.8 × s)`.
-4. Normalize targets onto a portfolio totalling 100%, with **5% minimum and 20% maximum** per stock.
+3. Compute each company's weighted mean sentiment `s` and raw target `0.05 × (1 + 0.8 × s)`.
+4. Normalize targets onto a portfolio totalling 100%, with **2% minimum and 15% maximum** per stock.
 5. Limit one-way turnover, `0.5 × sum(abs(new − old))`, to **8% per batch** by interpolating from the previous portfolio.
 6. Persist a snapshot only when a batch adds a new, recent company signal. Exact duplicate text cannot repeatedly rebalance the portfolio.
 
