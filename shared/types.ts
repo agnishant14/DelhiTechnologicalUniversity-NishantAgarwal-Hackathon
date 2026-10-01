@@ -49,6 +49,66 @@ export const STOCKS = [
     sector: "Healthcare",
     aliases: ["Johnson & Johnson", "Johnson and Johnson"],
   },
+  {
+    ticker: "V",
+    name: "Visa",
+    sector: "Financials",
+    aliases: ["Visa"],
+  },
+  {
+    ticker: "WMT",
+    name: "Walmart",
+    sector: "Consumer",
+    aliases: ["Walmart"],
+  },
+  {
+    ticker: "PG",
+    name: "Procter & Gamble",
+    sector: "Consumer",
+    aliases: ["Procter & Gamble", "P&G", "Procter and Gamble"],
+  },
+  {
+    ticker: "MA",
+    name: "Mastercard",
+    sector: "Financials",
+    aliases: ["Mastercard"],
+  },
+  {
+    ticker: "HD",
+    name: "Home Depot",
+    sector: "Consumer",
+    aliases: ["Home Depot"],
+  },
+  {
+    ticker: "UNH",
+    name: "UnitedHealth",
+    sector: "Healthcare",
+    aliases: ["UnitedHealth", "UnitedHealthcare", "United Health"],
+  },
+  {
+    ticker: "BAC",
+    name: "Bank of America",
+    sector: "Financials",
+    aliases: ["Bank of America", "BofA"],
+  },
+  {
+    ticker: "LLY",
+    name: "Eli Lilly",
+    sector: "Healthcare",
+    aliases: ["Eli Lilly", "Lilly"],
+  },
+  {
+    ticker: "AVGO",
+    name: "Broadcom",
+    sector: "Technology",
+    aliases: ["Broadcom"],
+  },
+  {
+    ticker: "COST",
+    name: "Costco",
+    sector: "Consumer",
+    aliases: ["Costco"],
+  },
 ] as const;
 export type Ticker = (typeof STOCKS)[number]["ticker"];
 export type Mode = "demo" | "live";
