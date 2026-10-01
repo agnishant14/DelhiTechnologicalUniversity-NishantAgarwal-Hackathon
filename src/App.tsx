@@ -110,6 +110,16 @@ const STOCK_META: Record<
   JPM: { name: "JPMorgan", bg: "#0a2f64", color: "#ffffff", price: 221.4 },
   XOM: { name: "Exxon Mobil", bg: "#ffffff", color: "#ed1b2d", price: 118.9 },
   JNJ: { name: "Johnson & Johnson", bg: "#d51900", color: "#ffffff", price: 161.75 },
+  V: { name: "Visa", bg: "#1a1f71", color: "#ffffff", price: 285.5 },
+  WMT: { name: "Walmart", bg: "#0071ce", color: "#ffffff", price: 80.25 },
+  PG: { name: "Procter & Gamble", bg: "#003cae", color: "#ffffff", price: 172.4 },
+  MA: { name: "Mastercard", bg: "#111827", color: "#ffffff", price: 495.8 },
+  HD: { name: "Home Depot", bg: "#f96302", color: "#ffffff", price: 412.3 },
+  UNH: { name: "UnitedHealth", bg: "#002677", color: "#ffffff", price: 585.6 },
+  BAC: { name: "Bank of America", bg: "#ffffff", color: "#e31837", price: 41.9 },
+  LLY: { name: "Eli Lilly", bg: "#d51900", color: "#ffffff", price: 912.4 },
+  AVGO: { name: "Broadcom", bg: "#cc092f", color: "#ffffff", price: 174.8 },
+  COST: { name: "Costco", bg: "#005dab", color: "#ffffff", price: 898.2 },
 };
 
 const SAMPLE_PROMPTS = [
@@ -894,7 +904,7 @@ export default function App() {
             <div className="panel-head">
               <div>
                 <h2>Tactical Index Allocation (Module A)</h2>
-                <p>10-Stock S&P Portfolio Target Weights (5% to 20% Bounds)</p>
+                <p>20-Stock S&P Portfolio Target Weights (2% to 15% Bounds)</p>
               </div>
             </div>
 
@@ -1262,7 +1272,7 @@ export default function App() {
                 <h3 style={{ fontSize: 15, marginBottom: 8 }}>2. Downstream Module A &amp; B</h3>
                 <p style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>
                   <b>Module A</b> implements dynamic portfolio rebalancing with exponential sentiment decay
-                  (6-hour half-life), strict 5% to 20% position bounds, and an 8% turnover constraint per batch.
+                  (6-hour half-life), strict 2% to 15% position bounds across 20 S&P 100 constituents, and an 8% turnover constraint per batch.
                   <b>Module B</b> simulates macroeconomic shocks across wholesale banking asset tranches.
                 </p>
               </div>
