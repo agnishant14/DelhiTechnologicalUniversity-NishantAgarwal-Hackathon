@@ -1,6 +1,9 @@
 node_modules/
 dist/
-data/
+data/*
+!data/demo.json
+!data/sources.json
+!data/README.md
 .cache/
 .env
 .env.*
