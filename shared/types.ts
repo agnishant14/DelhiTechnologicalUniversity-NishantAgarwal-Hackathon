@@ -132,4 +132,40 @@ export interface Dashboard {
     lastUpdated: string | null;
   };
   replay: { position: number; total: number };
+  flow?: MarketFlowForecast;
+}
+
+export interface StockFlowForecast {
+  ticker: Ticker;
+  name: string;
+  predictedFlowMillions: number;
+  regime: "Accumulation" | "Distribution" | "Neutral";
+  momentumScore: number;
+  confidence: number;
+  expectedDriftPct: number;
+  primaryDriver: string;
+}
+
+export interface MarketFlowForecast {
+  regime:
+    | "Bullish Inflow Expansion"
+    | "Neutral Consolidation"
+    | "De-Risking Outflow"
+    | "Event Volatility Surge";
+  netFlowScore: number;
+  predictedDirection: "Bullish Inflow" | "Bearish Outflow" | "Neutral Consolidation";
+  inflowProbability: number;
+  predicted24hVolatility: number;
+  sentimentVelocity: number;
+  crossAssetFlows: {
+    equitiesMillions: number;
+    bondsMillions: number;
+    moneyMarketMillions: number;
+  };
+  stockFlows: StockFlowForecast[];
+  historicalAccuracy: {
+    directionalAccuracy: number;
+    evaluatedSignalsCount: number;
+    simulatedInformationRatio: number;
+  };
 }
