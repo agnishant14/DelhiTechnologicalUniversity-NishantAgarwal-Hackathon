@@ -165,6 +165,13 @@ function NavLabel({
   activeLabelColor,
   onSelect,
 }: NavLabelProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    if (href && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+      e.preventDefault();
+    }
+    onSelect();
+  };
+
   const props = {
     "data-slot": "gooey-nav-item",
     "data-active": isActive,
@@ -176,7 +183,7 @@ function NavLabel({
       !isActive && "text-[#64748b] hover:text-[#0f172a]",
     ),
     style: isActive ? { color: activeLabelColor } : undefined,
-    onClick: onSelect,
+    onClick: handleClick,
   } as const;
 
   return href ? (
