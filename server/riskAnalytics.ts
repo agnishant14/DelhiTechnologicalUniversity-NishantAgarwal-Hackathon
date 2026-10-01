@@ -460,9 +460,10 @@ export async function simulateWhatIf(
   const detectedTickers = signal.tickers;
 
   // Previous weights map
-  const previousWeights = currentHoldings.length
-    ? Object.fromEntries(currentHoldings.map((h) => [h.ticker, h.weight]))
-    : equalWeights();
+  const previousWeights: Record<Ticker, number> = equalWeights();
+  for (const h of currentHoldings) {
+    previousWeights[h.ticker] = h.weight;
+  }
 
   const { weights: rebalancedWeights, turnover } = rebalance(
     [signal],
