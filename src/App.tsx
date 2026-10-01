@@ -58,12 +58,14 @@ import {
   STOCKS,
   type Dashboard,
   type Holding,
+  type MarketFlowForecast,
   type Signal,
   type Ticker,
 } from "../shared/types";
 
 type View =
   | "overview"
+  | "flow"
   | "signals"
   | "portfolio"
   | "stress"
@@ -366,6 +368,7 @@ export default function App() {
   const [text, setText] = useState("");
   const [search, setSearch] = useState("");
   const [eventFilter, setEventFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [highImpactOnly, setHighImpactOnly] = useState(false);
   const [selectedStressScenario, setSelectedStressScenario] = useState(0);
 
@@ -410,7 +413,7 @@ export default function App() {
         "refresh",
         {},
       );
-      setNotice(`${result.added} new signals ingested from live feeds.`);
+      setNotice(`${result.added} new signals ingested from live multi-source feeds.`);
     });
 
   const replay = () =>
@@ -424,7 +427,7 @@ export default function App() {
       await api("mode", { mode: data?.mode === "demo" ? "live" : "demo" });
       setNotice(
         data?.mode === "demo"
-          ? "Live feeds connected. Auto-refresh enabled."
+          ? "Live feeds connected (Google News, GDELT, Yahoo Finance, HN)."
           : "Demo dataset restored.",
       );
     });
@@ -484,8 +487,11 @@ export default function App() {
         .toLowerCase()
         .includes(search.toLowerCase());
     const matchesEvent = eventFilter === "all" || s.event === eventFilter;
+    const matchesSource =
+      sourceFilter === "all" ||
+      s.sourceName.toLowerCase().includes(sourceFilter.toLowerCase());
     const matchesImpact = !highImpactOnly || s.impact >= 7;
-    return matchesSearch && matchesEvent && matchesImpact;
+    return matchesSearch && matchesEvent && matchesSource && matchesImpact;
   });
 
   const basePortfolio = [
@@ -534,6 +540,8 @@ export default function App() {
   const totalDelta = totalStressed - totalBase;
   const totalPct = (totalDelta / totalBase) * 100;
 
+  const flowData = data?.flow;
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -553,7 +561,7 @@ export default function App() {
 
         <div className="sidebar-wallet-card">
           <div className="wallet-card-header">
-            <span>Total Investment</span>
+            <span>Total Risk Capital</span>
             <span className="wallet-pill">+18,10% ↑</span>
           </div>
           <div className="wallet-balance">
@@ -576,11 +584,34 @@ export default function App() {
             <span>Dashboard</span>
           </button>
           <button
+            className={view === "flow" ? "active" : ""}
+            onClick={() => setView("flow")}
+          >
+            <Sparkles size={18} />
+            <span>AI Market Flow</span>
+            <small
+              style={{
+                background: "#dbeafe",
+                color: "#1d4ed8",
+                fontWeight: 700,
+              }}
+            >
+              NEW
+            </small>
+          </button>
+          <button
             className={view === "portfolio" ? "active" : ""}
             onClick={() => setView("portfolio")}
           >
             <Layers3 size={18} />
-            <span>Wallet / Index</span>
+            <span>Index Rebalance</span>
+          </button>
+          <button
+            className={view === "stress" ? "active" : ""}
+            onClick={() => setView("stress")}
+          >
+            <TrendingUp size={18} />
+            <span>Stress Testing</span>
           </button>
           <button
             className={view === "signals" ? "active" : ""}
@@ -590,20 +621,6 @@ export default function App() {
             <span>News & Signals</span>
             <small>{data?.stats.total ?? "—"}</small>
           </button>
-          <button
-            className={view === "stress" ? "active" : ""}
-            onClick={() => setView("stress")}
-          >
-            <TrendingUp size={18} />
-            <span>Stock & Fund</span>
-            <ChevronDown size={14} style={{ marginLeft: "auto" }} />
-          </button>
-          {view === "stress" && (
-            <div className="nav-subgroup">
-              <span className="nav-subitem active">Stress Testing (Mod B)</span>
-              <span className="nav-subitem">10-Stock Index (Mod A)</span>
-            </div>
-          )}
         </nav>
 
         <div className="sidebar-bottom-nav">
@@ -612,15 +629,15 @@ export default function App() {
             onClick={() => setView("method")}
           >
             <BookOpen size={18} />
-            <span>Our Community</span>
+            <span>Methodology</span>
           </button>
           <button
             className={view === "sources" ? "active" : ""}
             onClick={() => setView("sources")}
           >
             <Database size={18} />
-            <span>Settings</span>
-            <span className="badge-dot">2</span>
+            <span>Data Sources</span>
+            <span className="badge-dot">{data?.sources.length ?? 4}</span>
           </button>
           <button onClick={() => setAnalyze(true)}>
             <Plus size={18} />
@@ -1020,16 +1037,88 @@ export default function App() {
                 </div>
               </div>
 
+              {flowData && (
+                <div className="flow-engine-card">
+                  <div className="flow-engine-header">
+                    <div>
+                      <span className="banner-pill" style={{ marginBottom: 6 }}>
+                        <Sparkles size={12} />
+                        NOVEL AI ENGINE: PREDICTIVE MARKET FLOW
+                      </span>
+                      <h3>AI Market Regime & Institutional Flow Forecast</h3>
+                      <p>
+                        Using FinBERT sentiment momentum, event clustering, and volume
+                        decay to forecast next-24h capital flows across index holdings.
+                      </p>
+                    </div>
+                    <button
+                      className="button secondary"
+                      onClick={() => setView("flow")}
+                    >
+                      Deep Dive Analytics <ArrowRight size={14} />
+                    </button>
+                  </div>
+
+                  <div className="flow-grid-summary">
+                    <div className="flow-stat-box">
+                      <span>Predicted Market Regime</span>
+                      <strong style={{ fontSize: 18 }}>{flowData.regime}</strong>
+                      <small className="positive">
+                        {flowData.predictedDirection}
+                      </small>
+                    </div>
+                    <div className="flow-stat-box">
+                      <span>Inflow Probability</span>
+                      <strong>{pct(flowData.inflowProbability, 0)}</strong>
+                      <small
+                        className={
+                          flowData.inflowProbability >= 0.5
+                            ? "positive"
+                            : "negative"
+                        }
+                      >
+                        Net Score: {flowData.netFlowScore > 0 ? "+" : ""}
+                        {flowData.netFlowScore}/100
+                      </small>
+                    </div>
+                    <div className="flow-stat-box">
+                      <span>Predicted Equity Flow</span>
+                      <strong
+                        style={{
+                          color:
+                            flowData.crossAssetFlows.equitiesMillions >= 0
+                              ? "#059669"
+                              : "#dc2626",
+                        }}
+                      >
+                        {flowData.crossAssetFlows.equitiesMillions >= 0
+                          ? "+"
+                          : ""}
+                        ${flowData.crossAssetFlows.equitiesMillions}M
+                      </strong>
+                      <small className="muted">24h Institutional Flow</small>
+                    </div>
+                    <div className="flow-stat-box">
+                      <span>Predicted Volatility</span>
+                      <strong>{flowData.predicted24hVolatility}%</strong>
+                      <small className="muted">
+                        Historical Accuracy: {flowData.historicalAccuracy.directionalAccuracy}%
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="panel" style={{ marginBottom: 24 }}>
                 <div className="panel-head">
                   <div>
                     <h2>
-                      Signal Intelligence Feed{" "}
+                      Multi-Source Signal Intelligence{" "}
                       <span className="count-pill">
                         {filteredSignals.length}
                       </span>
                     </h2>
-                    <p>Real-time news & social data parsed by FinBERT</p>
+                    <p>Live news from Google News, GDELT, Yahoo Finance & Hacker News</p>
                   </div>
                   <button
                     className="button secondary"
@@ -1060,6 +1149,20 @@ export default function App() {
                           {ev}
                         </option>
                       ))}
+                    </select>
+                  </div>
+                  <div className="select-box">
+                    <Database size={14} />
+                    <select
+                      value={sourceFilter}
+                      onChange={(e) => setSourceFilter(e.target.value)}
+                    >
+                      <option value="all">All News Sources</option>
+                      <option value="Google">Google News RSS</option>
+                      <option value="Yahoo">Yahoo Finance</option>
+                      <option value="GDELT">GDELT Global</option>
+                      <option value="Hacker">Hacker News</option>
+                      <option value="Manual">Manual Input</option>
                     </select>
                   </div>
                   <button
@@ -1174,6 +1277,189 @@ export default function App() {
             </>
           )}
 
+          {view === "flow" && flowData && (
+            <div className="flow-engine-card">
+              <div className="flow-engine-header">
+                <div>
+                  <span className="banner-pill" style={{ marginBottom: 6 }}>
+                    <Sparkles size={12} />
+                    NOVEL PREDICTIVE MODEL
+                  </span>
+                  <h2>AI Market Flow & Regime Forecaster</h2>
+                  <p>
+                    Predicts systematic institutional capital reallocations by
+                    calculating sentiment velocity, event clustering, and FinBERT
+                    probabilities across multi-source financial feeds.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flow-grid-summary">
+                <div className="flow-stat-box">
+                  <span>Current Market Regime</span>
+                  <strong style={{ fontSize: 18 }}>{flowData.regime}</strong>
+                  <small className="positive">
+                    {flowData.predictedDirection}
+                  </small>
+                </div>
+                <div className="flow-stat-box">
+                  <span>Net Inflow Probability</span>
+                  <strong>{pct(flowData.inflowProbability, 0)}</strong>
+                  <small className="positive">
+                    Score: {flowData.netFlowScore > 0 ? "+" : ""}
+                    {flowData.netFlowScore}/100
+                  </small>
+                </div>
+                <div className="flow-stat-box">
+                  <span>Predicted Volatility</span>
+                  <strong>{flowData.predicted24hVolatility}%</strong>
+                  <small className="muted">Expected 24h Band</small>
+                </div>
+                <div className="flow-stat-box">
+                  <span>Model Directional Accuracy</span>
+                  <strong>
+                    {flowData.historicalAccuracy.directionalAccuracy}%
+                  </strong>
+                  <small className="positive">
+                    Info Ratio: {flowData.historicalAccuracy.simulatedInformationRatio}
+                  </small>
+                </div>
+              </div>
+
+              <div className="section-head" style={{ marginTop: 20 }}>
+                <h2>Cross-Asset Predicted Capital Flows</h2>
+                <span>Projected 24-Hour Capital Flow Direction</span>
+              </div>
+
+              <div className="cross-asset-row">
+                <div className="asset-flow-tile">
+                  <span>Large-Cap Equities</span>
+                  <b
+                    style={{
+                      color:
+                        flowData.crossAssetFlows.equitiesMillions >= 0
+                          ? "#059669"
+                          : "#dc2626",
+                    }}
+                  >
+                    {flowData.crossAssetFlows.equitiesMillions >= 0 ? "+" : ""}
+                    ${flowData.crossAssetFlows.equitiesMillions}M
+                  </b>
+                </div>
+                <div className="asset-flow-tile">
+                  <span>Sovereign & IG Bonds</span>
+                  <b
+                    style={{
+                      color:
+                        flowData.crossAssetFlows.bondsMillions >= 0
+                          ? "#059669"
+                          : "#dc2626",
+                    }}
+                  >
+                    {flowData.crossAssetFlows.bondsMillions >= 0 ? "+" : ""}
+                    ${flowData.crossAssetFlows.bondsMillions}M
+                  </b>
+                </div>
+                <div className="asset-flow-tile">
+                  <span>Money Market / Cash</span>
+                  <b
+                    style={{
+                      color:
+                        flowData.crossAssetFlows.moneyMarketMillions >= 0
+                          ? "#059669"
+                          : "#dc2626",
+                    }}
+                  >
+                    {flowData.crossAssetFlows.moneyMarketMillions >= 0 ? "+" : ""}
+                    ${flowData.crossAssetFlows.moneyMarketMillions}M
+                  </b>
+                </div>
+              </div>
+
+              <div className="section-head" style={{ marginTop: 24 }}>
+                <h2>Stock-by-Stock Institutional Order Flow Matrix</h2>
+                <span>Predicted Net Flow, Regime, Momentum & Primary Driver</span>
+              </div>
+
+              <div className="table-scroll">
+                <table className="flow-matrix-table">
+                  <thead>
+                    <tr>
+                      <th>ASSET</th>
+                      <th>PREDICTED FLOW</th>
+                      <th>REGIME</th>
+                      <th>MOMENTUM</th>
+                      <th>EXPECTED DRIFT</th>
+                      <th>PRIMARY DRIVING HEADLINE</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flowData.stockFlows.map((sf) => (
+                      <tr key={sf.ticker}>
+                        <td>
+                          <b>{sf.name}</b> ({sf.ticker})
+                        </td>
+                        <td>
+                          <b
+                            style={{
+                              color:
+                                sf.predictedFlowMillions >= 0
+                                  ? "#059669"
+                                  : "#dc2626",
+                            }}
+                          >
+                            {sf.predictedFlowMillions >= 0 ? "+" : "-"}$
+                            {Math.abs(sf.predictedFlowMillions).toFixed(1)}M
+                          </b>
+                        </td>
+                        <td>
+                          <span
+                            className={`regime-badge ${sf.regime.toLowerCase()}`}
+                          >
+                            {sf.regime}
+                          </span>
+                        </td>
+                        <td>
+                          <span>{sf.momentumScore}/100</span>
+                          <span className="meter-track">
+                            <span
+                              className="meter-fill"
+                              style={{ width: `${sf.momentumScore}%` }}
+                            />
+                          </span>
+                        </td>
+                        <td
+                          style={{
+                            color:
+                              sf.expectedDriftPct >= 0
+                                ? "#059669"
+                                : "#dc2626",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {sf.expectedDriftPct >= 0 ? "+" : ""}
+                          {sf.expectedDriftPct.toFixed(2)}%
+                        </td>
+                        <td
+                          style={{
+                            maxWidth: 320,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            color: "#475569",
+                          }}
+                          title={sf.primaryDriver}
+                        >
+                          {sf.primaryDriver}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {view === "signals" && (
             <div className="panel" style={{ marginBottom: 24 }}>
               <div className="panel-head">
@@ -1184,7 +1470,7 @@ export default function App() {
                       {filteredSignals.length}
                     </span>
                   </h2>
-                  <p>Filter by company, event severity, and NLP sentiment</p>
+                  <p>Filter by company, news source, event severity, and NLP sentiment</p>
                 </div>
               </div>
 
@@ -1209,6 +1495,20 @@ export default function App() {
                         {ev}
                       </option>
                     ))}
+                  </select>
+                </div>
+                <div className="select-box">
+                  <Database size={14} />
+                  <select
+                    value={sourceFilter}
+                    onChange={(e) => setSourceFilter(e.target.value)}
+                  >
+                    <option value="all">All News Sources</option>
+                    <option value="Google">Google News RSS</option>
+                    <option value="Yahoo">Yahoo Finance</option>
+                    <option value="GDELT">GDELT Global</option>
+                    <option value="Hacker">Hacker News</option>
+                    <option value="Manual">Manual Input</option>
                   </select>
                 </div>
                 <button
@@ -1542,7 +1842,7 @@ export default function App() {
                     {s.name}
                   </h3>
                   <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
-                    Ingesting public headlines into FinBERT sentiment pipeline.
+                    Ingesting public news headlines into FinBERT sentiment pipeline.
                   </p>
                   <div
                     style={{
@@ -1568,8 +1868,8 @@ export default function App() {
               {[
                 [
                   "01",
-                  "Data Ingestion",
-                  "Multi-source RSS news feeds and Hacker News discussions ingested with duplicate suppression.",
+                  "Multi-Source Ingestion",
+                  "Google News RSS, GDELT Project, Yahoo Finance, and Hacker News ingested with deduplication.",
                 ],
                 [
                   "02",
@@ -1578,12 +1878,12 @@ export default function App() {
                 ],
                 [
                   "03",
-                  "Risk Scoring",
-                  "Deterministic event classification and impact formulas estimate market severity from 1 to 10.",
+                  "Predictive Market Flow Engine",
+                  "Novel AI order flow model forecasts institutional inflows, volatility shifts, and cross-asset flow reallocations.",
                 ],
                 [
                   "04",
-                  "Index Rebalancing",
+                  "Tactical Index Rebalancing",
                   "Decayed sentiment informs target stock weights bounded between 5% and 20% with 8% turnover limit.",
                 ],
               ].map(([num, title, body]) => (
@@ -1621,8 +1921,8 @@ export default function App() {
 
       {analyze && (
         <Modal
-          title="Analyze text into risk signal"
-          subtitle="Submit custom financial text for real-time FinBERT inference and index rebalancing."
+          title="Analyze text into risk signal & predicted flow"
+          subtitle="Submit custom financial text for real-time FinBERT inference, flow forecasting, and index rebalancing."
           close={() => setAnalyze(false)}
         >
           <form onSubmit={submit}>
