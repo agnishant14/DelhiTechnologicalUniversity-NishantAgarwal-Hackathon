@@ -139,4 +139,19 @@ describe("pipeline API", () => {
     await first;
     expect(service.busy).toBe(false);
   });
+  it("serves large financial dataset with pagination and search filtering", async () => {
+    const app = createApp(service);
+    const res = await request(app).get("/api/dataset?limit=10").expect(200);
+    expect(res.body.total).toBe(923);
+    expect(res.body.records).toHaveLength(10);
+    expect(res.body.records[0]).toHaveProperty("text");
+    expect(res.body.records[0]).toHaveProperty("sourceName");
+
+    const searchRes = await request(app)
+      .get("/api/dataset?search=Nomura&limit=5")
+      .expect(200);
+    expect(searchRes.body.filteredCount).toBeGreaterThan(0);
+    expect(searchRes.body.records[0].text).toContain("Nomura");
+  });
 });
+
