@@ -223,6 +223,6 @@ export class RiskService {
     };
   }
   marketFlow() {
-    return predictMarketFlow(this.signals());
+    return predictMarketFlow(this.store.signals(this.mode));
   }
 }
