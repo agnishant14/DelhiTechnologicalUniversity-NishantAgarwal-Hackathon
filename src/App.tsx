@@ -13,31 +13,21 @@ import {
   ArrowRight,
   ArrowUpRight,
   BarChart3,
-  Bell,
-  BookOpen,
   Check,
   ChevronDown,
-  ChevronRight,
-  CircleHelp,
   Database,
   Download,
-  ExternalLink,
   Eye,
-  EyeOff,
-  Globe2,
+  FileText,
   Layers3,
-  LayoutDashboard,
   LoaderCircle,
-  Mail,
   MessageSquare,
   Newspaper,
   Pause,
   Play,
   Plus,
-  Radio,
   RefreshCw,
   Search,
-  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   TrendingDown,
@@ -49,7 +39,9 @@ import {
   Area,
   AreaChart,
   Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
   ComposedChart,
   Line,
   LineChart,
@@ -64,7 +56,6 @@ import {
   STOCKS,
   type Dashboard,
   type Holding,
-  type MarketFlowForecast,
   type Signal,
   type Ticker,
 } from "../shared/types";
@@ -80,27 +71,26 @@ import { StockLogo } from "./StockLogo";
 
 type View =
   | "overview"
-  | "flow"
-  | "signals"
   | "portfolio"
   | "stress"
-  | "sources"
+  | "flow"
+  | "signals"
   | "method";
 
 const STOCK_META: Record<
   string,
-  { name: string; bg: string; color: string; price: number; initial: string }
+  { name: string; bg: string; color: string; price: number }
 > = {
-  AAPL: { name: "Apple", bg: "#000000", color: "#ffffff", price: 150.7, initial: "" },
-  META: { name: "Meta", bg: "#0866ff", color: "#ffffff", price: 140.45, initial: "M" },
-  MSFT: { name: "Microsoft", bg: "#00a4ef", color: "#ffffff", price: 240.98, initial: "田" },
-  GOOGL: { name: "Google", bg: "#ea4335", color: "#ffffff", price: 99.12, initial: "G" },
-  NVDA: { name: "NVIDIA", bg: "#76b900", color: "#ffffff", price: 124.5, initial: "N" },
-  AMZN: { name: "Amazon", bg: "#ff9900", color: "#ffffff", price: 182.3, initial: "a" },
-  TSLA: { name: "Tesla", bg: "#e82127", color: "#ffffff", price: 210.15, initial: "T" },
-  JPM: { name: "JPMorgan", bg: "#0a2f64", color: "#ffffff", price: 198.4, initial: "J" },
-  XOM: { name: "Exxon Mobil", bg: "#ed1b2d", color: "#ffffff", price: 112.6, initial: "X" },
-  JNJ: { name: "Johnson & Johnson", bg: "#d51900", color: "#ffffff", price: 162.2, initial: "+" },
+  AAPL: { name: "Apple", bg: "#000000", color: "#ffffff", price: 232.85 },
+  META: { name: "Meta", bg: "#0866ff", color: "#ffffff", price: 582.1 },
+  MSFT: { name: "Microsoft", bg: "#ffffff", color: "#00a4ef", price: 448.2 },
+  GOOGL: { name: "Google", bg: "#ffffff", color: "#ea4335", price: 179.5 },
+  NVDA: { name: "NVIDIA", bg: "#76b900", color: "#ffffff", price: 128.65 },
+  AMZN: { name: "Amazon", bg: "#232f3e", color: "#ff9900", price: 186.4 },
+  TSLA: { name: "Tesla", bg: "#e82127", color: "#ffffff", price: 254.3 },
+  JPM: { name: "JPMorgan", bg: "#0a2f64", color: "#ffffff", price: 221.4 },
+  XOM: { name: "Exxon Mobil", bg: "#ffffff", color: "#ed1b2d", price: 118.9 },
+  JNJ: { name: "Johnson & Johnson", bg: "#d51900", color: "#ffffff", price: 161.75 },
 };
 
 const SAMPLE_PROMPTS = [
@@ -111,6 +101,24 @@ const SAMPLE_PROMPTS = [
   "NVIDIA reveals next-generation Blackwell AI architecture with massive enterprise demand",
 ];
 
+const MONTHLY_FLOW_DATA = [
+  { month: "Jan 2026", flow: 600 },
+  { month: "Feb 2026", flow: -200 },
+  { month: "Mar 2026", flow: 480 },
+  { month: "Apr 2026", flow: 750 },
+  { month: "May 2026", flow: 320 },
+  { month: "Jun 2026", flow: -250 },
+];
+
+const GLOBAL_INDICES = [
+  { name: "S&P 500", val: "4,213.80", delta: "+60.30 (+1.45%)", positive: true },
+  { name: "DOW JONES", val: "33,700.00", delta: "-61.00 (-0.18%)", positive: false },
+  { name: "CRISIL COMPOSITE", val: "15,540.10", delta: "-18.39 (-0.12%)", positive: false },
+  { name: "NASDAQ 100", val: "15,288.40", delta: "+87.20 (+0.57%)", positive: true },
+  { name: "FTSE 100", val: "7,620.50", delta: "+1.08 (+0.01%)", positive: true },
+  { name: "NIKKEI 225", val: "33,240.10", delta: "+124.50 (+0.38%)", positive: true },
+];
+
 const pct = (n: number, digits = 1) => `${(n * 100).toFixed(digits)}%`;
 const signed = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(2)}`;
 const tone = (n: number) =>
@@ -118,7 +126,7 @@ const tone = (n: number) =>
 const clock = (s: string | null) =>
   s
     ? new Date(s).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    : "—";
+    : "10:36am";
 
 async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(
@@ -169,202 +177,27 @@ function Modal({
               style={{
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#2563eb",
+                color: "#1d4ed8",
                 letterSpacing: "0.5px",
+                textTransform: "uppercase",
               }}
             >
-              RISK ENGINE INTEL
+              Risk Engine Intelligence
             </span>
             <h2>{title}</h2>
             {subtitle && <p>{subtitle}</p>}
           </div>
           <button
-            className="header-circle-btn"
-            style={{ width: 32, height: 32 }}
+            className="dialog-close-btn"
             aria-label="Close dialog"
             onClick={close}
           >
-            <X size={16} />
+            <X size={15} />
           </button>
         </div>
         {children}
       </div>
     </dialog>
-  );
-}
-
-function SignalDetail({
-  signal: s,
-  close,
-}: {
-  signal: Signal;
-  close: () => void;
-}) {
-  const [json, setJson] = useState(false);
-  return (
-    <Modal
-      title="Inside the signal"
-      subtitle={`${s.sourceName} · ${clock(s.publishedAt)} · ${s.model}`}
-      close={close}
-    >
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <span
-          className="time-pill"
-          style={{ padding: "3px 10px", fontSize: 11 }}
-        >
-          {s.isSample
-            ? "Fictional demo"
-            : s.sourceKind === "manual"
-              ? "Manual input"
-              : "Live source"}
-        </span>
-        {s.tickers.map((t) => (
-          <span
-            key={t}
-            className="time-pill"
-            style={{
-              padding: "3px 10px",
-              fontSize: 11,
-              background: "#eff6ff",
-              color: "#2563eb",
-              borderColor: "#bfdbfe",
-            }}
-          >
-            {t}
-          </span>
-        ))}
-      </div>
-      <h3 style={{ fontSize: 16, fontWeight: 600, margin: "16px 0", lineHeight: 1.5 }}>
-        {s.text}
-      </h3>
-      <div className="detail-scores">
-        <div>
-          <span>Sentiment</span>
-          <strong
-            style={{
-              color:
-                s.sentiment > 0.15
-                  ? "#059669"
-                  : s.sentiment < -0.15
-                    ? "#dc2626"
-                    : "#64748b",
-            }}
-          >
-            {signed(s.sentiment)}
-          </strong>
-        </div>
-        <div>
-          <span>Impact estimate</span>
-          <strong>
-            {s.impact}
-            <small style={{ fontSize: 12, color: "#94a3b8" }}>/10</small>
-          </strong>
-        </div>
-        <div>
-          <span>Model confidence</span>
-          <strong>
-            {s.confidence === null ? "N/A" : pct(s.confidence, 0)}
-          </strong>
-        </div>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          margin: "16px 0",
-        }}
-      >
-        <span style={{ fontSize: 12, color: "#64748b" }}>
-          Event classification:
-        </span>
-        <span className={`event-tag event-${s.event.split(" ")[0].toLowerCase()}`}>
-          {s.event}
-        </span>
-      </div>
-      <h4 style={{ fontSize: 12, fontWeight: 700, margin: "14px 0 8px" }}>
-        How this was scored:
-      </h4>
-      <ul style={{ paddingLeft: 18, fontSize: 12, color: "#334155", lineHeight: 1.7 }}>
-        {s.evidence.map((text, i) => (
-          <li key={i}>{text}</li>
-        ))}
-      </ul>
-      <p style={{ fontSize: 11, color: "#94a3b8", lineHeight: 1.6, marginTop: 16 }}>
-        Impact is a rule-based severity estimate. Model confidence describes
-        sentiment classification, not market probability.
-      </p>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
-        <button className="button secondary" onClick={() => setJson(!json)}>
-          <Database size={14} />
-          {json ? "Hide JSON" : "View JSON"}
-        </button>
-        {s.sourceUrl && (
-          <a
-            className="button secondary"
-            href={s.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Original source <ExternalLink size={14} />
-          </a>
-        )}
-      </div>
-      {json && (
-        <pre
-          style={{
-            background: "#f8fafc",
-            border: "1px solid #edf0f4",
-            borderRadius: 12,
-            padding: 14,
-            fontSize: 11,
-            maxHeight: 220,
-            overflow: "auto",
-            marginTop: 14,
-          }}
-        >
-          {JSON.stringify(s, null, 2)}
-        </pre>
-      )}
-    </Modal>
-  );
-}
-
-function MiniSparkline({
-  values,
-  positive,
-}: {
-  values: number[];
-  positive: boolean;
-}) {
-  const points = values.length >= 2 ? values : [0.1, 0.1];
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const range = max - min > 0.0001 ? max - min : 0.01;
-  const width = 52;
-  const height = 24;
-
-  const path = points
-    .map((val, i) => {
-      const x = (i / (points.length - 1)) * width;
-      const y = height - ((val - min) / range) * (height - 6) - 3;
-      return `${i === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  const color = positive ? "#10b981" : "#ef4444";
-
-  return (
-    <svg className="stock-sparkline-svg" viewBox={`0 0 ${width} ${height}`}>
-      <path
-        d={path}
-        fill="none"
-        stroke={color}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }
 
@@ -377,11 +210,8 @@ export default function App() {
   const [pending, setPending] = useState("");
   const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
   const [selectedStock, setSelectedStock] = useState<Ticker>("AAPL");
-  const [activeTimeframe, setActiveTimeframe] = useState("1 Day");
-  const [chartMode, setChartMode] = useState<"price" | "weight">("price");
-  const [isStreaming, setIsStreaming] = useState(true);
-  const [showDepth, setShowDepth] = useState(true);
-  const [showBalance, setShowBalance] = useState(true);
+  const [showAdvancedModal, setShowAdvancedModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [analyze, setAnalyze] = useState(false);
   const [text, setText] = useState("");
   const [search, setSearch] = useState("");
@@ -389,6 +219,7 @@ export default function App() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [highImpactOnly, setHighImpactOnly] = useState(false);
   const [selectedStressScenario, setSelectedStressScenario] = useState(0);
+  const [isStreaming, setIsStreaming] = useState(true);
 
   const [liveStocks, setLiveStocks] = useState<Record<string, StockLiveState>>(() => {
     const init: Record<string, StockLiveState> = {};
@@ -453,13 +284,13 @@ export default function App() {
         "refresh",
         {},
       );
-      setNotice(`${result.added} new signals ingested from live multi-source feeds.`);
+      setNotice(`${result.added} new signals ingested from live financial feeds.`);
     });
 
   const replay = () =>
     action("replay", async () => {
       const r = await api<{ added: number }>("replay", {});
-      setNotice(`${r.added} demo scenarios analyzed. Index weights updated.`);
+      setNotice(`${r.added} demo scenarios analyzed. S&P index weights rebalanced.`);
     });
 
   const switchMode = () =>
@@ -468,7 +299,7 @@ export default function App() {
       setNotice(
         data?.mode === "demo"
           ? "Live feeds connected (Google News, GDELT, Yahoo Finance, HN)."
-          : "Demo dataset restored.",
+          : "Demo scenarios restored.",
       );
     });
 
@@ -488,18 +319,6 @@ export default function App() {
   };
 
   const busy = !!pending || !!data?.busy || !data?.ready;
-
-  const currentHolding =
-    data?.holdings.find((h) => h.ticker === selectedStock) ??
-    data?.holdings[0] ?? {
-      ticker: "AAPL",
-      name: "Apple",
-      sector: "Technology",
-      weight: 0.1,
-      previousWeight: 0.1,
-      sentiment: 0,
-      signalCount: 0,
-    };
 
   const activeStockState = liveStocks[selectedStock] ?? {
     ticker: selectedStock,
@@ -522,150 +341,52 @@ export default function App() {
     return generateMarketDepth(activeStockState.price, activeSentiment);
   }, [activeStockState.price, activeSentiment]);
 
+  // Real-time ticking engine
   useEffect(() => {
     if (!isStreaming) return;
     const interval = setInterval(() => {
       setLiveStocks((prev) => {
         const next = { ...prev };
-        const curStock = next[selectedStock];
-        if (curStock && curStock.history.length > 0) {
-          const lastTick = curStock.history[curStock.history.length - 1];
+        for (const stk of STOCKS) {
+          const isSelected = stk.ticker === selectedStock;
+          if (!isSelected && Math.random() > 0.4) continue;
+          const cur = next[stk.ticker];
+          if (!cur || cur.history.length === 0) continue;
+          const last = cur.history[cur.history.length - 1];
           const matchingSignals =
-            data?.signals?.filter((s) => s.tickers.includes(selectedStock)) ?? [];
-          const latestSignal = matchingSignals[0];
-          const sentiment = latestSignal ? latestSignal.sentiment : 0;
-          const impact = latestSignal ? latestSignal.impact : 4;
+            data?.signals?.filter((s) => s.tickers.includes(stk.ticker)) ?? [];
+          const sentiment = matchingSignals[0]?.sentiment ?? 0;
+          const impact = matchingSignals[0]?.impact ?? 4;
 
-          const nextTick = generateNextTick(
-            lastTick,
+          const tick = generateNextTick(
+            last,
             sentiment,
             impact,
-            curStock.history.map((h) => h.price),
+            cur.history.map((h) => h.price),
           );
 
-          const flash =
-            nextTick.price > curStock.price
-              ? "up"
-              : nextTick.price < curStock.price
-                ? "down"
-                : null;
-          const newHigh = Math.max(curStock.highPrice, nextTick.high);
-          const newLow = Math.min(curStock.lowPrice, nextTick.low);
-          const change = Number((nextTick.price - curStock.openPrice).toFixed(2));
-          const changePct = Number(
-            ((change / curStock.openPrice) * 100).toFixed(2),
-          );
+          const change = Number((tick.price - cur.openPrice).toFixed(2));
+          const changePct = Number(((change / cur.openPrice) * 100).toFixed(2));
 
-          next[selectedStock] = {
-            ...curStock,
-            prevPrice: curStock.price,
-            price: nextTick.price,
-            highPrice: newHigh,
-            lowPrice: newLow,
+          next[stk.ticker] = {
+            ...cur,
+            prevPrice: cur.price,
+            price: tick.price,
+            highPrice: Math.max(cur.highPrice, tick.high),
+            lowPrice: Math.min(cur.lowPrice, tick.low),
             dayChange: change,
             dayChangePct: changePct,
-            volume: curStock.volume + nextTick.volume,
-            flash,
-            history: [...curStock.history.slice(-45), nextTick],
+            volume: cur.volume + tick.volume,
+            flash: tick.price > cur.price ? "up" : tick.price < cur.price ? "down" : null,
+            history: [...cur.history.slice(-32), tick],
           };
         }
-
-        for (const stk of STOCKS) {
-          if (stk.ticker === selectedStock) continue;
-          if (Math.random() > 0.45) continue;
-          const bgStock = next[stk.ticker];
-          if (bgStock && bgStock.history.length > 0) {
-            const last = bgStock.history[bgStock.history.length - 1];
-            const tick = generateNextTick(
-              last,
-              0,
-              3,
-              bgStock.history.map((h) => h.price),
-            );
-            const change = Number((tick.price - bgStock.openPrice).toFixed(2));
-            const changePct = Number(
-              ((change / bgStock.openPrice) * 100).toFixed(2),
-            );
-            next[stk.ticker] = {
-              ...bgStock,
-              prevPrice: bgStock.price,
-              price: tick.price,
-              dayChange: change,
-              dayChangePct: changePct,
-              volume: bgStock.volume + tick.volume,
-              flash:
-                tick.price > bgStock.price
-                  ? "up"
-                  : tick.price < bgStock.price
-                    ? "down"
-                    : null,
-              history: [...bgStock.history.slice(-30), tick],
-            };
-          }
-        }
-
         return next;
       });
-    }, 1200);
+    }, 1400);
 
     return () => clearInterval(interval);
   }, [isStreaming, selectedStock, data?.signals]);
-
-  useEffect(() => {
-    const cur = liveStocks[selectedStock];
-    if (cur?.flash) {
-      const t = setTimeout(() => {
-        setLiveStocks((prev) => ({
-          ...prev,
-          [selectedStock]: { ...prev[selectedStock], flash: null },
-        }));
-      }, 450);
-      return () => clearTimeout(t);
-    }
-  }, [liveStocks, selectedStock]);
-
-  const handleTimeframeChange = (tf: string) => {
-    setActiveTimeframe(tf);
-    const matchingSignals =
-      data?.signals?.filter((s) => s.tickers.includes(selectedStock)) ?? [];
-    const sentiment = matchingSignals[0]?.sentiment ?? 0;
-    const { ticks, openPrice } = generateInitialTicks(selectedStock, tf, sentiment);
-    const last = ticks[ticks.length - 1];
-    setLiveStocks((prev) => ({
-      ...prev,
-      [selectedStock]: {
-        ...prev[selectedStock],
-        price: last.price,
-        prevPrice: last.price,
-        openPrice,
-        highPrice: Math.max(...ticks.map((t) => t.high)),
-        lowPrice: Math.min(...ticks.map((t) => t.low)),
-        dayChange: Number((last.price - openPrice).toFixed(2)),
-        dayChangePct: Number((((last.price - openPrice) / openPrice) * 100).toFixed(2)),
-        history: ticks,
-      },
-    }));
-  };
-
-  const stockDelta =
-    ((currentHolding.weight - currentHolding.previousWeight) * 100);
-
-  const stockHistoryData =
-    data && data.history.length > 0
-      ? data.history.map((s, idx) => ({
-          tick: idx === 0 ? "15" : `${15 + idx}`,
-          val: ((s.weights[selectedStock] ?? 0.1) * 100).toFixed(2),
-        }))
-      : [
-          { tick: "15", val: "10.00" },
-          { tick: "16", val: "11.20" },
-          { tick: "17", val: "10.80" },
-          { tick: "18", val: "12.40" },
-          { tick: "19", val: "11.90" },
-          { tick: "20", val: "13.50" },
-          { tick: "21", val: "14.20" },
-          { tick: "22", val: "14.80" },
-        ];
 
   const filteredSignals = (data?.signals ?? []).filter((s) => {
     const matchesSearch =
@@ -728,1798 +449,1083 @@ export default function App() {
 
   const flowData = data?.flow;
 
+  // The 4 prominent radar stocks
+  const radarStocks: Ticker[] = ["AAPL", "META", "MSFT", "NVDA"];
+
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <a
-          className="brand"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            setView("overview");
-          }}
-        >
-          <span className="brand-icon">
-            <Zap size={18} fill="currentColor" />
-          </span>
-          <b>GoRisk</b>
-        </a>
-
-        <div className="sidebar-wallet-card">
-          <div className="wallet-card-header">
-            <span>Total Risk Capital</span>
-            <span className="wallet-pill">+18,10% ↑</span>
+    <div>
+      {/* Top Navigation Bar (Investio Dark Slate Bar) */}
+      <header className="investio-nav">
+        <div className="nav-left">
+          <div className="nav-brand">
+            <span className="nav-brand-logo-mark" />
+            <span>GoRisk</span>
           </div>
-          <div className="wallet-balance">
-            <strong>{showBalance ? "$5,380,90" : "••••••"}</strong>
+
+          <nav className="nav-links" aria-label="Primary navigation">
             <button
-              onClick={() => setShowBalance(!showBalance)}
-              aria-label="Toggle balance visibility"
+              className={`nav-link ${view === "overview" ? "active" : ""}`}
+              onClick={() => setView("overview")}
             >
-              {showBalance ? <Eye size={15} /> : <EyeOff size={15} />}
+              Dashboard
             </button>
-          </div>
-        </div>
-
-        <nav aria-label="Main sidebar">
-          <button
-            className={view === "overview" ? "active" : ""}
-            onClick={() => setView("overview")}
-          >
-            <LayoutDashboard size={18} />
-            <span>Dashboard</span>
-          </button>
-          <button
-            className={view === "flow" ? "active" : ""}
-            onClick={() => setView("flow")}
-          >
-            <Sparkles size={18} />
-            <span>AI Market Flow</span>
-            <small
-              style={{
-                background: "#dbeafe",
-                color: "#1d4ed8",
-                fontWeight: 700,
-              }}
+            <button
+              className={`nav-link ${view === "portfolio" ? "active" : ""}`}
+              onClick={() => setView("portfolio")}
             >
-              NEW
-            </small>
-          </button>
-          <button
-            className={view === "portfolio" ? "active" : ""}
-            onClick={() => setView("portfolio")}
-          >
-            <Layers3 size={18} />
-            <span>Index Rebalance</span>
-          </button>
-          <button
-            className={view === "stress" ? "active" : ""}
-            onClick={() => setView("stress")}
-          >
-            <TrendingUp size={18} />
-            <span>Stress Testing</span>
-          </button>
-          <button
-            className={view === "signals" ? "active" : ""}
-            onClick={() => setView("signals")}
-          >
-            <Radio size={18} />
-            <span>News & Signals</span>
-            <small>{data?.stats.total ?? "—"}</small>
-          </button>
-        </nav>
-
-        <div className="sidebar-bottom-nav">
-          <button
-            className={view === "method" ? "active" : ""}
-            onClick={() => setView("method")}
-          >
-            <BookOpen size={18} />
-            <span>Methodology</span>
-          </button>
-          <button
-            className={view === "sources" ? "active" : ""}
-            onClick={() => setView("sources")}
-          >
-            <Database size={18} />
-            <span>Data Sources</span>
-            <span className="badge-dot">{data?.sources.length ?? 4}</span>
-          </button>
-          <button onClick={() => setAnalyze(true)}>
-            <Plus size={18} />
-            <span>Analyze Text</span>
-          </button>
+              Tactical Index
+            </button>
+            <button
+              className={`nav-link ${view === "stress" ? "active" : ""}`}
+              onClick={() => setView("stress")}
+            >
+              Wholesale Stress
+            </button>
+            <button
+              className={`nav-link ${view === "flow" ? "active" : ""}`}
+              onClick={() => setView("flow")}
+            >
+              Market Flow
+            </button>
+            <button
+              className={`nav-link ${view === "signals" ? "active" : ""}`}
+              onClick={() => setView("signals")}
+            >
+              Signal Intel
+            </button>
+            <button
+              className={`nav-link ${view === "method" ? "active" : ""}`}
+              onClick={() => setView("method")}
+            >
+              Methodology
+            </button>
+          </nav>
         </div>
-      </aside>
 
-      <div className="main-shell">
-        <header className="topbar">
-          <div className="header-search">
-            <Search size={16} />
+        <div className="nav-right">
+          <div className="nav-search">
+            <Search size={14} />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder='Press "⌘K" to search for various stocks...'
+              placeholder="Search for a company, ticker or event..."
             />
           </div>
-
-          <div className="topbar-actions">
-            <button
-              className="header-circle-btn"
-              onClick={() => setAnalyze(true)}
-              title="Add text for NLP analysis"
-            >
-              <Mail size={16} />
-            </button>
-            <button
-              className="header-circle-btn"
-              onClick={() => setView("signals")}
-              title="Notifications"
-            >
-              <Bell size={16} />
-              <span className="header-badge" />
-            </button>
-            <div className="top-divider" />
-            <div className="header-user" onClick={() => setView("method")}>
-              <div className="header-user-avatar">SP</div>
-              <b>Nishant Agarwal</b>
-              <ChevronDown size={14} />
-            </div>
+          <div className="nav-alert-btn" title="2 Active High-Severity Alerts">
+            2
           </div>
-        </header>
-
-        <main>
-          <div className="banner-strip">
-            <div>
-              <span className={`banner-pill ${data?.mode === "live" ? "live" : ""}`}>
-                {data?.mode === "live" ? <Globe2 size={13} /> : <Play size={11} />}
-                {data?.mode === "live" ? "LIVE SOURCES" : "DEMO WORKSPACE"}
-              </span>
-              <p>
-                S&P Global & CRISIL Risk Intelligence Engine ·{" "}
-                {data?.engine.status === "ready"
-                  ? "FinBERT CPU Online"
-                  : "Lexicon Fallback"}
-              </p>
-            </div>
-            <div className="banner-actions">
-              <button
-                className="button secondary"
-                onClick={() => setAnalyze(true)}
-                disabled={busy}
-              >
-                <Plus size={14} />
-                Analyze Text
-              </button>
-              <button
-                className="button primary"
-                onClick={() =>
-                  void (data?.mode === "demo" ? replay() : refresh())
-                }
-                disabled={busy}
-              >
-                {pending ? (
-                  <LoaderCircle className="spin" size={14} />
-                ) : data?.mode === "demo" ? (
-                  <Play size={13} fill="currentColor" />
-                ) : (
-                  <RefreshCw size={13} />
-                )}
-                {data?.mode === "demo" ? "Run Next Event" : "Fetch Live"}
-              </button>
-              <button
-                className="button secondary"
-                onClick={() => void switchMode()}
-                disabled={busy}
-              >
-                {data?.mode === "live" ? "Demo Mode" : "Live Feeds"}
-              </button>
-            </div>
+          <div className="nav-user-pill" title="Nishant Agarwal">
+            <div className="nav-user-avatar">NA</div>
+            <ChevronDown size={14} />
           </div>
+        </div>
+      </header>
 
-          {(error || connectionError) && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "12px 18px",
-                background: "#fef2f2",
-                border: "1px solid #fecaca",
-                borderRadius: 14,
-                marginBottom: 20,
-                color: "#b91c1c",
-                fontSize: 12,
+      {/* Global Market Indices Ticker Strip */}
+      <div className="investio-ticker-strip">
+        {GLOBAL_INDICES.map((idx) => (
+          <div key={idx.name} className="ticker-item">
+            <span className="ticker-name">{idx.name}</span>
+            <span className="ticker-val">{idx.val}</span>
+            <span
+              className={`ticker-delta ${idx.positive ? "positive" : "negative"}`}
+            >
+              {idx.positive ? "▲" : "▼"} {idx.delta}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Main Page Container */}
+      <main className="investio-container">
+        {(error || connectionError) && (
+          <div className="investio-toast error">
+            <span>{error || connectionError}</span>
+            <button
+              onClick={() => {
+                setError("");
+                setConnectionError("");
               }}
             >
-              <CircleHelp size={16} />
-              <span style={{ flex: 1 }}>{error || connectionError}</span>
-              <button
-                onClick={() => {
-                  setError("");
-                  setConnectionError("");
-                }}
-                style={{ background: "none", border: 0, color: "inherit" }}
-              >
-                <X size={15} />
-              </button>
-            </div>
-          )}
+              <X size={14} />
+            </button>
+          </div>
+        )}
 
-          {notice && (
-            <div className="toast">
-              <Check size={16} />
-              {notice}
-            </div>
-          )}
+        {notice && (
+          <div className="investio-toast">
+            <span>{notice}</span>
+            <button onClick={() => setNotice("")}>
+              <Check size={14} />
+            </button>
+          </div>
+        )}
 
-          {view === "overview" && (
-            <>
-              <div className="section-head">
-                <h2>My Portfolio</h2>
-                <span>10 S&P Large-Cap Holdings</span>
+        {view === "overview" && (
+          <>
+            {/* Top Grid: Greeting & Current Portfolio on Left, Risk & Flow Stats on Right */}
+            <div className="investio-top-grid">
+              <div className="left-stack">
+                <div className="investio-card greeting-card">
+                  <h2>Hello Nishant, welcome back to GoRisk.</h2>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      className="btn-secondary-pill"
+                      onClick={() => void (data?.mode === "demo" ? replay() : refresh())}
+                      disabled={busy}
+                    >
+                      {pending ? (
+                        <LoaderCircle className="spin" size={13} />
+                      ) : (
+                        <span>&lt;&gt;</span>
+                      )}
+                      <span>
+                        {data?.mode === "demo" ? "Run Next Event" : "Sync with Feeds"}
+                      </span>
+                    </button>
+                    <button
+                      className="btn-secondary-pill"
+                      onClick={() => void switchMode()}
+                      disabled={busy}
+                    >
+                      {data?.mode === "live" ? "Demo Mode" : "Live Feeds"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="investio-card current-portfolio-card">
+                  <div className="card-header-row">
+                    <h3>Current portfolio</h3>
+                    <div className="card-header-actions">
+                      <span className="dropdown-pill">
+                        Tactical index <ChevronDown size={12} />
+                      </span>
+                      <button
+                        className="btn-secondary-pill"
+                        onClick={() => setAnalyze(true)}
+                        style={{ padding: "6px 12px" }}
+                      >
+                        <Plus size={13} />
+                        Add scenario
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="portfolio-metrics-split">
+                    <div className="metric-block">
+                      <span className="metric-label">My holdings</span>
+                      <h4>$ 32,568.56</h4>
+                      <span className="metric-sub positive">
+                        Today: +95.89 (+0.67%) ▲
+                      </span>
+                    </div>
+
+                    <div className="metric-block">
+                      <span className="metric-label">NLP net flow</span>
+                      <h4 style={{ color: "#059669" }}>
+                        $ 5,216.40 <small style={{ fontSize: 16 }}>(+16.02%)</small>
+                      </h4>
+                      <span className="metric-sub negative">
+                        This month: -232.56 (-2.24%) ▼
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="portfolio-row">
-                {STOCKS.slice(0, 4).map((stk) => {
-                  const holding = data?.holdings.find(
-                    (h) => h.ticker === stk.ticker,
-                  ) ?? {
-                    weight: 0.1,
-                    previousWeight: 0.1,
-                    sentiment: 0,
-                  };
-                  const meta = STOCK_META[stk.ticker] ?? {
-                    name: stk.name,
+              {/* Right Column: Risk & Flow stats (Revenue stats in reference) */}
+              <div className="investio-card revenue-stats-card">
+                <div className="card-header-row">
+                  <h3>Risk & Flow stats</h3>
+                  <div className="card-header-actions">
+                    <span className="dropdown-pill">
+                      Monthly <ChevronDown size={12} />
+                    </span>
+                    <button
+                      className="btn-secondary-pill"
+                      onClick={() => setShowReportModal(true)}
+                      style={{ padding: "6px 12px" }}
+                    >
+                      <Eye size={13} />
+                      View report
+                    </button>
+                  </div>
+                </div>
+
+                <div className="revenue-stats-body">
+                  <div className="revenue-stats-left">
+                    <div className="rev-metric-lead">
+                      <span>Average monthly flow</span>
+                      <h4>$ 324.18</h4>
+                      <small>m/m: -543.89 (-1.86%)</small>
+                    </div>
+
+                    <div className="rev-sub-details">
+                      <div>
+                        <span>FinBERT Positive:</span>
+                        <b>68%</b>
+                      </div>
+                      <div>
+                        <span>Active Events:</span>
+                        <b>{data?.signals?.length ?? 24}</b>
+                      </div>
+                      <div>
+                        <span>Turnover Cap:</span>
+                        <b>8.0%</b>
+                      </div>
+                    </div>
+
+                    <button
+                      className="link-download-report"
+                      onClick={() => window.open("/api/export", "_blank")}
+                    >
+                      <Download size={13} />
+                      Download report
+                    </button>
+                  </div>
+
+                  <div className="revenue-chart-container">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={MONTHLY_FLOW_DATA}
+                        margin={{ top: 10, right: 10, bottom: 0, left: -20 }}
+                      >
+                        <CartesianGrid
+                          stroke="#f1f5f9"
+                          strokeDasharray="2 2"
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="month"
+                          tick={{ fill: "#94a3b8", fontSize: 10 }}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          domain={[-300, 800]}
+                          ticks={[-250, 0, 250, 500, 750]}
+                          tick={{ fill: "#94a3b8", fontSize: 10 }}
+                          tickLine={false}
+                          axisLine={false}
+                          orientation="right"
+                        />
+                        <ReferenceLine y={0} stroke="#cbd5e1" />
+                        <Tooltip
+                          contentStyle={{
+                            background: "#0f172a",
+                            border: "none",
+                            borderRadius: 8,
+                            color: "#ffffff",
+                            fontSize: 11,
+                            padding: "6px 10px",
+                          }}
+                          formatter={(v) => [`$${Number(v)}M`, "Net Capital Flow"]}
+                        />
+                        <Bar dataKey="flow" radius={[3, 3, 0, 0]}>
+                          {MONTHLY_FLOW_DATA.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.flow >= 0 ? "#1d4ed8" : "#dc2626"}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Section: Investment Radar (4 Cards) */}
+            <section className="investment-radar-section">
+              <div className="radar-header-row">
+                <h3>Investment radar</h3>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <span className="dropdown-pill">
+                    Edit universe <ChevronDown size={12} />
+                  </span>
+                  <button
+                    className="btn-secondary-pill"
+                    onClick={() => setAnalyze(true)}
+                  >
+                    <Plus size={13} />
+                    Add instrument
+                  </button>
+                </div>
+              </div>
+
+              <div className="radar-grid">
+                {radarStocks.map((ticker) => {
+                  const stock = liveStocks[ticker];
+                  const meta = STOCK_META[ticker] ?? {
+                    name: ticker,
                     bg: "#000",
                     color: "#fff",
                     price: 150,
-                    initial: stk.ticker[0],
                   };
-                  const live = liveStocks[stk.ticker];
-                  const livePrice = live ? live.price : meta.price;
-                  const liveDelta = live
-                    ? live.dayChangePct
-                    : (holding.weight - holding.previousWeight) * 100;
-                  const isSelected = selectedStock === stk.ticker;
-                  const sparklineVals =
-                    live && live.history.length > 2
-                      ? live.history.map((t) => t.price)
-                      : data?.history.map((s) => s.weights[stk.ticker] ?? 0.1) ?? [
-                          0.1, 0.1,
+                  const price = stock ? stock.price : meta.price;
+                  const delta = stock ? stock.dayChangePct : 0.45;
+                  const historyData =
+                    stock && stock.history.length > 0
+                      ? stock.history
+                      : [
+                          { time: "Apr", price: price * 0.96 },
+                          { time: "May", price: price * 0.99 },
+                          { time: "Jun", price },
                         ];
+                  const isPositive = delta >= 0;
 
                   return (
-                    <div
-                      key={stk.ticker}
-                      className={`portfolio-card ${isSelected ? "selected" : ""}`}
-                      onClick={() => setSelectedStock(stk.ticker)}
-                    >
-                      <div className="portfolio-card-top">
-                        <div className="portfolio-card-brand">
-                          <StockLogo ticker={stk.ticker} size={34} />
-                          <div>
-                            <b>{meta.name}</b>
+                    <div key={ticker} className="radar-card">
+                      <div className="radar-card-header">
+                        <div className="radar-company-info">
+                          <StockLogo ticker={ticker} size={28} />
+                          <div className="radar-company-titles">
+                            <b>
+                              {ticker} ({meta.name})
+                            </b>
+                            <span>Updated: Live 10:36am</span>
                           </div>
                         </div>
-                        <MiniSparkline
-                          values={sparklineVals}
-                          positive={liveDelta >= -0.005}
-                        />
-                      </div>
-                      <div className="portfolio-card-metrics">
-                        <div className="portfolio-metric-row">
-                          <span>Live Price</span>
-                          <b>${livePrice.toFixed(2)}</b>
-                        </div>
-                        <div className="portfolio-metric-row">
-                          <span>Day Return</span>
+
+                        <div className="radar-price-block">
+                          <span className="radar-price-val">
+                            {price.toFixed(2)} USD
+                          </span>
                           <span
-                            className={`metric-return ${
-                              liveDelta > 0.005
-                                ? "positive"
-                                : liveDelta < -0.005
-                                  ? "negative"
-                                  : "neutral"
+                            className={`radar-delta ${
+                              isPositive ? "positive" : "negative"
                             }`}
                           >
-                            {liveDelta >= 0 ? "+" : ""}
-                            {liveDelta.toFixed(2)}% {liveDelta >= 0 ? "↑" : "↓"}
+                            {signed(delta)}% {isPositive ? "▲" : "▼"}
                           </span>
                         </div>
+                      </div>
+
+                      <div className="radar-chart-wrap">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart
+                            data={historyData}
+                            margin={{ top: 6, right: 4, bottom: 0, left: -26 }}
+                          >
+                            <defs>
+                              <linearGradient
+                                id={`grad-${ticker}`}
+                                x1="0"
+                                y1="0"
+                                x2="0"
+                                y2="1"
+                              >
+                                <stop
+                                  offset="5%"
+                                  stopColor={isPositive ? "#3b82f6" : "#ef4444"}
+                                  stopOpacity={0.3}
+                                />
+                                <stop
+                                  offset="95%"
+                                  stopColor={isPositive ? "#3b82f6" : "#ef4444"}
+                                  stopOpacity={0.0}
+                                />
+                              </linearGradient>
+                            </defs>
+                            <XAxis
+                              dataKey="time"
+                              tick={{ fill: "#94a3b8", fontSize: 9 }}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <YAxis
+                              domain={["auto", "auto"]}
+                              tick={{ fill: "#94a3b8", fontSize: 9 }}
+                              tickLine={false}
+                              axisLine={false}
+                              orientation="right"
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                background: "#0f172a",
+                                border: "none",
+                                borderRadius: 8,
+                                color: "#ffffff",
+                                fontSize: 11,
+                                padding: "6px 10px",
+                              }}
+                              formatter={(v) => [`$${Number(v).toFixed(2)}`, "Price"]}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey="price"
+                              stroke={isPositive ? "#2563eb" : "#dc2626"}
+                              strokeWidth={1.8}
+                              fill={`url(#grad-${ticker})`}
+                              dot={false}
+                              isAnimationActive={false}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      <div className="radar-card-footer">
+                        <div
+                          className="toggle-switch-wrap"
+                          onClick={() => setIsStreaming(!isStreaming)}
+                          title="Toggle live stream notifications"
+                        >
+                          <div
+                            className={`toggle-switch-track ${
+                              isStreaming ? "on" : ""
+                            }`}
+                          >
+                            <div className="toggle-switch-thumb" />
+                          </div>
+                          <span>Notifications</span>
+                        </div>
+
+                        <button
+                          className="btn-link-advanced"
+                          onClick={() => {
+                            setSelectedStock(ticker);
+                            setShowAdvancedModal(true);
+                          }}
+                        >
+                          Advanced chart
+                        </button>
                       </div>
                     </div>
                   );
                 })}
               </div>
+            </section>
+          </>
+        )}
 
-              <div className="main-dashboard-grid">
-                <div className="hero-chart-card">
-                  <div className="hero-chart-header">
-                    <div className="hero-chart-stock-info">
-                      <StockLogo ticker={selectedStock} size={44} />
-                      <div className="hero-stock-titles">
+        {/* Tactical Index View (Module A) */}
+        {view === "portfolio" && (
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <h2>Tactical Index Allocation (Module A)</h2>
+                <p>10-Stock S&P Portfolio Target Weights (5% to 20% Bounds)</p>
+              </div>
+            </div>
+
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Company</th>
+                    <th>Sector</th>
+                    <th>Current Weight</th>
+                    <th>Previous Weight</th>
+                    <th>Sentiment Drift</th>
+                    <th>Signals Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data?.holdings.map((h) => (
+                    <tr key={h.ticker}>
+                      <td>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <h3>
-                            {STOCK_META[selectedStock]?.name ?? selectedStock}
-                          </h3>
-                          <span
-                            className={`live-pulse-badge ${!isStreaming ? "paused" : ""}`}
-                          >
-                            <span className="live-dot" />
-                            {isStreaming ? "LIVE STREAM" : "PAUSED"}
-                          </span>
+                          <StockLogo ticker={h.ticker} size={22} />
+                          <div>
+                            <b>{h.name}</b> ({h.ticker})
+                          </div>
                         </div>
-                        <span>{selectedStock} · S&P Large-Cap</span>
-                      </div>
-                    </div>
-                    <div className="hero-chart-price-block">
-                      <div className="hero-price-row">
-                        <div
-                          className={`hero-price-badge ${
-                            activeStockState.dayChange >= 0 ? "positive" : "negative"
-                          }`}
-                        >
-                          {activeStockState.dayChange >= 0 ? "+" : ""}
-                          ${activeStockState.dayChange.toFixed(2)} ({activeStockState.dayChangePct >= 0 ? "+" : ""}
-                          {activeStockState.dayChangePct.toFixed(2)}%) {activeStockState.dayChange >= 0 ? "↑" : "↓"}
-                        </div>
-                        <span
-                          className={`hero-price-val ${
-                            activeStockState.flash ? `flash-${activeStockState.flash}` : ""
-                          }`}
-                        >
-                          ${activeStockState.price.toFixed(2)}
-                        </span>
-                      </div>
-                      <span className="hero-last-update">
-                        {isStreaming ? "Real-time stochastic feed" : "Stream paused"} ·{" "}
-                        {clock(data?.stats.lastUpdated ?? null)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="hero-chart-stats-strip">
-                    <div className="stat-item">
-                      <span>Day Open</span>
-                      <b>${activeStockState.openPrice.toFixed(2)}</b>
-                    </div>
-                    <div className="stat-item">
-                      <span>Day High</span>
-                      <b>${activeStockState.highPrice.toFixed(2)}</b>
-                    </div>
-                    <div className="stat-item">
-                      <span>Day Low</span>
-                      <b>${activeStockState.lowPrice.toFixed(2)}</b>
-                    </div>
-                    <div className="stat-item">
-                      <span>Volume</span>
-                      <b>{(activeStockState.volume / 1000).toFixed(1)}k</b>
-                    </div>
-                    <div className="stat-item">
-                      <span>VWAP</span>
-                      <b>
-                        $
-                        {(
-                          (activeStockState.highPrice +
-                            activeStockState.lowPrice +
-                            activeStockState.price) /
-                          3
-                        ).toFixed(2)}
-                      </b>
-                    </div>
-                    <div className="stat-item">
-                      <span>FinBERT Bias</span>
-                      <b
+                      </td>
+                      <td>{h.sector}</td>
+                      <td>
+                        <b>{pct(h.weight, 2)}</b>
+                      </td>
+                      <td>{pct(h.previousWeight, 2)}</td>
+                      <td
                         style={{
                           color:
-                            activeSentiment > 0.15
+                            h.sentiment > 0.15
                               ? "#059669"
-                              : activeSentiment < -0.15
+                              : h.sentiment < -0.15
                                 ? "#dc2626"
                                 : "#64748b",
+                          fontWeight: 600,
                         }}
                       >
-                        {activeSentiment > 0.15
-                          ? "Bullish +0.4%"
-                          : activeSentiment < -0.15
-                            ? "Bearish -0.4%"
-                            : "Neutral Drift"}
-                      </b>
-                    </div>
-                  </div>
-
-                  <div className="chart-toolbar-row">
-                    <div className="timeframe-pill-bar">
-                      {[
-                        "1 Day",
-                        "1 Week",
-                        "1 Month",
-                        "3 Month",
-                        "1 Year",
-                        "All",
-                      ].map((pill) => (
-                        <button
-                          key={pill}
-                          className={`time-pill ${activeTimeframe === pill ? "active" : ""}`}
-                          onClick={() => handleTimeframeChange(pill)}
-                        >
-                          {pill === "1 Day" ? "1D (Live)" : pill}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div className="chart-actions-group">
-                      <button
-                        className={`chart-mode-pill ${chartMode === "price" ? "active" : ""}`}
-                        onClick={() => setChartMode("price")}
-                        title="Live stock market price and volume"
-                      >
-                        <TrendingUp size={12} />
-                        Price ($)
-                      </button>
-                      <button
-                        className={`chart-mode-pill ${chartMode === "weight" ? "active" : ""}`}
-                        onClick={() => setChartMode("weight")}
-                        title="Tactical index allocation history"
-                      >
-                        <Layers3 size={12} />
-                        Weight (%)
-                      </button>
-                      <button
-                        className="stream-ctrl-btn"
-                        onClick={() => setIsStreaming(!isStreaming)}
-                        title={isStreaming ? "Pause live stream" : "Resume live stream"}
-                      >
-                        {isStreaming ? (
-                          <Pause size={12} />
-                        ) : (
-                          <Play size={12} fill="currentColor" />
-                        )}
-                        {isStreaming ? "Pause" : "Live"}
-                      </button>
-                      <button
-                        className={`stream-ctrl-btn ${showDepth ? "active" : ""}`}
-                        onClick={() => setShowDepth(!showDepth)}
-                        title="Toggle Level 2 Market Depth (Order Book)"
-                      >
-                        <BarChart3 size={12} />
-                        Depth
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="hero-line-chart">
-                    <ResponsiveContainer width="100%" height="100%">
-                      {chartMode === "price" ? (
-                        <ComposedChart
-                          data={activeStockState.history}
-                          margin={{ top: 10, right: 10, bottom: 0, left: 10 }}
-                        >
-                          <defs>
-                            <linearGradient
-                              id="liveAreaGrad"
-                              x1="0"
-                              y1="0"
-                              x2="0"
-                              y2="1"
-                            >
-                              <stop
-                                offset="5%"
-                                stopColor={
-                                  activeStockState.dayChange >= 0
-                                    ? "#10b981"
-                                    : "#ef4444"
-                                }
-                                stopOpacity={0.25}
-                              />
-                              <stop
-                                offset="95%"
-                                stopColor={
-                                  activeStockState.dayChange >= 0
-                                    ? "#10b981"
-                                    : "#ef4444"
-                                }
-                                stopOpacity={0.0}
-                              />
-                            </linearGradient>
-                            <linearGradient
-                              id="volGrad"
-                              x1="0"
-                              y1="0"
-                              x2="0"
-                              y2="1"
-                            >
-                              <stop
-                                offset="0%"
-                                stopColor="#94a3b8"
-                                stopOpacity={0.3}
-                              />
-                              <stop
-                                offset="100%"
-                                stopColor="#94a3b8"
-                                stopOpacity={0.05}
-                              />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid
-                            stroke="#f1f3f7"
-                            strokeDasharray="3 3"
-                            vertical={false}
-                          />
-                          <XAxis
-                            dataKey="time"
-                            tick={{ fill: "#94a3b8", fontSize: 10 }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            yAxisId="price"
-                            domain={["auto", "auto"]}
-                            tickFormatter={(v) => `$${Number(v).toFixed(1)}`}
-                            tick={{ fill: "#94a3b8", fontSize: 11 }}
-                            tickLine={false}
-                            axisLine={false}
-                            orientation="right"
-                          />
-                          <YAxis
-                            yAxisId="vol"
-                            domain={[0, "dataMax * 3.5"]}
-                            hide
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              background: "#0f172a",
-                              border: "none",
-                              borderRadius: 12,
-                              color: "#ffffff",
-                              fontSize: 12,
-                              padding: "10px 14px",
-                              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.2)",
-                            }}
-                            labelFormatter={(label) => `Time: ${label}`}
-                            formatter={(value, name) => [
-                              name === "price"
-                                ? `$${Number(value).toFixed(2)}`
-                                : name === "ma"
-                                  ? `$${Number(value).toFixed(2)}`
-                                  : `${Number(value).toLocaleString()} shares`,
-                              name === "price"
-                                ? "Live Price"
-                                : name === "ma"
-                                  ? "MA(7)"
-                                  : "Traded Volume",
-                            ]}
-                          />
-                          <Bar
-                            yAxisId="vol"
-                            dataKey="volume"
-                            fill="url(#volGrad)"
-                            radius={[2, 2, 0, 0]}
-                            maxBarSize={10}
-                            isAnimationActive={false}
-                          />
-                          <Area
-                            yAxisId="price"
-                            type="monotone"
-                            dataKey="price"
-                            stroke={
-                              activeStockState.dayChange >= 0
-                                ? "#059669"
-                                : "#dc2626"
-                            }
-                            strokeWidth={2.4}
-                            fill="url(#liveAreaGrad)"
-                            isAnimationActive={false}
-                            activeDot={{
-                              r: 5,
-                              stroke: "#ffffff",
-                              strokeWidth: 2,
-                              fill:
-                                activeStockState.dayChange >= 0
-                                  ? "#059669"
-                                  : "#dc2626",
-                            }}
-                          />
-                          <Line
-                            yAxisId="price"
-                            type="monotone"
-                            dataKey="ma"
-                            stroke="#6366f1"
-                            strokeWidth={1.5}
-                            strokeDasharray="3 3"
-                            dot={false}
-                            isAnimationActive={false}
-                          />
-                        </ComposedChart>
-                      ) : (
-                        <LineChart
-                          data={stockHistoryData}
-                          margin={{ top: 10, right: 10, bottom: 0, left: -26 }}
-                        >
-                          <CartesianGrid
-                            stroke="#f1f3f7"
-                            strokeDasharray="3 3"
-                            vertical={false}
-                          />
-                          <XAxis
-                            dataKey="tick"
-                            tick={{ fill: "#94a3b8", fontSize: 11 }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <YAxis
-                            domain={[0, 22]}
-                            ticks={[0, 5, 10, 15, 20]}
-                            tickFormatter={(v) => `${v}%`}
-                            tick={{ fill: "#94a3b8", fontSize: 11 }}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <Tooltip
-                            contentStyle={{
-                              background: "#0f172a",
-                              border: "none",
-                              borderRadius: 12,
-                              color: "#ffffff",
-                              fontSize: 12,
-                              padding: "8px 12px",
-                              boxShadow: "0 8px 24px rgba(15, 23, 42, 0.2)",
-                            }}
-                            labelFormatter={(v) => `Snapshot step #${v}`}
-                            formatter={(v) => [
-                              `${Number(v).toFixed(2)}%`,
-                              "Portfolio Weight",
-                            ]}
-                          />
-                          <ReferenceLine
-                            y={10}
-                            stroke="#cbd5e1"
-                            strokeDasharray="4 4"
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="val"
-                            stroke="#14b8a6"
-                            strokeWidth={2.8}
-                            dot={false}
-                            activeDot={{
-                              r: 5,
-                              strokeWidth: 2,
-                              stroke: "#ffffff",
-                            }}
-                          />
-                        </LineChart>
-                      )}
-                    </ResponsiveContainer>
-                  </div>
-
-                  {showDepth && (
-                    <div className="market-depth-panel">
-                      <div className="depth-header">
-                        <h4>
-                          <Activity size={13} />
-                          Level 2 Market Depth (Live Orders)
-                        </h4>
-                        <div className="depth-ratio-wrapper">
-                          <span style={{ color: "#2563eb" }}>
-                            Bids: {marketDepth.totalBuyQty.toLocaleString()}
-                          </span>
-                          <div className="depth-ratio-bar">
-                            <div
-                              className="depth-ratio-fill"
-                              style={{
-                                width: `${(
-                                  (marketDepth.totalBuyQty /
-                                    (marketDepth.totalBuyQty +
-                                      marketDepth.totalSellQty)) *
-                                  100
-                                ).toFixed(0)}%`,
-                              }}
-                            />
-                          </div>
-                          <span style={{ color: "#dc2626" }}>
-                            Asks: {marketDepth.totalSellQty.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="depth-grid">
-                        <div className="depth-col bids">
-                          <table>
-                            <thead>
-                              <tr>
-                                <th>Orders</th>
-                                <th>Qty</th>
-                                <th>Bid Price</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {marketDepth.bids.map((b, i) => (
-                                <tr key={i}>
-                                  <td>{b.orders}</td>
-                                  <td>{b.quantity.toLocaleString()}</td>
-                                  <td>${b.price.toFixed(2)}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                            <tfoot>
-                              <tr>
-                                <td>Total</td>
-                                <td>
-                                  {marketDepth.totalBuyQty.toLocaleString()}
-                                </td>
-                                <td>—</td>
-                              </tr>
-                            </tfoot>
-                          </table>
-                        </div>
-
-                        <div className="depth-col asks">
-                          <table>
-                            <thead>
-                              <tr>
-                                <th>Ask Price</th>
-                                <th>Qty</th>
-                                <th>Orders</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {marketDepth.asks.map((a, i) => (
-                                <tr key={i}>
-                                  <td>${a.price.toFixed(2)}</td>
-                                  <td>{a.quantity.toLocaleString()}</td>
-                                  <td>{a.orders}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                            <tfoot>
-                              <tr>
-                                <td>—</td>
-                                <td>
-                                  {marketDepth.totalSellQty.toLocaleString()}
-                                </td>
-                                <td>Total</td>
-                              </tr>
-                            </tfoot>
-                          </table>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="watchlist-card">
-                  <div className="watchlist-header">
-                    <h3>My watchlist</h3>
-                    <button
-                      onClick={() => setAnalyze(true)}
-                      title="Add headline"
-                    >
-                      <Plus size={16} />
-                    </button>
-                  </div>
-
-                  <div className="watchlist-list">
-                    {STOCKS.map((stk) => {
-                      const meta = STOCK_META[stk.ticker] ?? {
-                        name: stk.name,
-                        bg: "#000",
-                        color: "#fff",
-                        price: 100,
-                        initial: stk.ticker[0],
-                      };
-                      const live = liveStocks[stk.ticker];
-                      const livePrice = live ? live.price : meta.price;
-                      const liveDelta = live ? live.dayChangePct : 0;
-                      const isSelected = selectedStock === stk.ticker;
-
-                      return (
-                        <div
-                          key={stk.ticker}
-                          className={`watchlist-item ${isSelected ? "selected" : ""}`}
-                          onClick={() => setSelectedStock(stk.ticker)}
-                        >
-                          <div className="watchlist-item-left">
-                            <StockLogo ticker={stk.ticker} size={32} />
-                            <div className="watchlist-item-names">
-                              <b>{stk.ticker}</b>
-                              <span>{meta.name}</span>
-                            </div>
-                          </div>
-                          <div className="watchlist-item-right">
-                            <b
-                              className={
-                                live?.flash ? `flash-${live.flash}` : ""
-                              }
-                            >
-                              ${livePrice.toFixed(2)}
-                            </b>
-                            <span
-                              className={
-                                liveDelta > 0.005
-                                  ? "positive"
-                                  : liveDelta < -0.005
-                                    ? "negative"
-                                    : "neutral"
-                              }
-                            >
-                              {liveDelta >= 0 ? "+" : ""}
-                              {liveDelta.toFixed(2)}%
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {flowData && (
-                <div className="flow-engine-card">
-                  <div className="flow-engine-header">
-                    <div>
-                      <span className="banner-pill" style={{ marginBottom: 6 }}>
-                        <Sparkles size={12} />
-                        NOVEL AI ENGINE: PREDICTIVE MARKET FLOW
-                      </span>
-                      <h3>AI Market Regime & Institutional Flow Forecast</h3>
-                      <p>
-                        Using FinBERT sentiment momentum, event clustering, and volume
-                        decay to forecast next-24h capital flows across index holdings.
-                      </p>
-                    </div>
-                    <button
-                      className="button secondary"
-                      onClick={() => setView("flow")}
-                    >
-                      Deep Dive Analytics <ArrowRight size={14} />
-                    </button>
-                  </div>
-
-                  <div className="flow-grid-summary">
-                    <div className="flow-stat-box">
-                      <span>Predicted Market Regime</span>
-                      <strong style={{ fontSize: 18 }}>{flowData.regime}</strong>
-                      <small className="positive">
-                        {flowData.predictedDirection}
-                      </small>
-                    </div>
-                    <div className="flow-stat-box">
-                      <span>Inflow Probability</span>
-                      <strong>{pct(flowData.inflowProbability, 0)}</strong>
-                      <small
-                        className={
-                          flowData.inflowProbability >= 0.5
-                            ? "positive"
-                            : "negative"
-                        }
-                      >
-                        Net Score: {flowData.netFlowScore > 0 ? "+" : ""}
-                        {flowData.netFlowScore}/100
-                      </small>
-                    </div>
-                    <div className="flow-stat-box">
-                      <span>Predicted Equity Flow</span>
-                      <strong
-                        style={{
-                          color:
-                            flowData.crossAssetFlows.equitiesMillions >= 0
-                              ? "#059669"
-                              : "#dc2626",
-                        }}
-                      >
-                        {flowData.crossAssetFlows.equitiesMillions >= 0
-                          ? "+"
-                          : ""}
-                        ${flowData.crossAssetFlows.equitiesMillions}M
-                      </strong>
-                      <small className="muted">24h Institutional Flow</small>
-                    </div>
-                    <div className="flow-stat-box">
-                      <span>Predicted Volatility</span>
-                      <strong>{flowData.predicted24hVolatility}%</strong>
-                      <small className="muted">
-                        Historical Accuracy: {flowData.historicalAccuracy.directionalAccuracy}%
-                      </small>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="panel" style={{ marginBottom: 24 }}>
-                <div className="panel-head">
-                  <div>
-                    <h2>
-                      Multi-Source Signal Intelligence{" "}
-                      <span className="count-pill">
-                        {filteredSignals.length}
-                      </span>
-                    </h2>
-                    <p>Live news from Google News, GDELT, Yahoo Finance & Hacker News</p>
-                  </div>
-                  <button
-                    className="button secondary"
-                    onClick={() => setView("signals")}
-                  >
-                    View All Signals <ArrowRight size={14} />
-                  </button>
-                </div>
-
-                <div className="feed-filters">
-                  <div className="search-box">
-                    <Search size={14} />
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search headlines, company or event..."
-                    />
-                  </div>
-                  <div className="select-box">
-                    <SlidersHorizontal size={14} />
-                    <select
-                      value={eventFilter}
-                      onChange={(e) => setEventFilter(e.target.value)}
-                    >
-                      <option value="all">All Events</option>
-                      {EVENTS.map((ev) => (
-                        <option key={ev} value={ev}>
-                          {ev}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="select-box">
-                    <Database size={14} />
-                    <select
-                      value={sourceFilter}
-                      onChange={(e) => setSourceFilter(e.target.value)}
-                    >
-                      <option value="all">All News Sources</option>
-                      <option value="Google">Google News RSS</option>
-                      <option value="Yahoo">Yahoo Finance</option>
-                      <option value="GDELT">GDELT Global</option>
-                      <option value="Hacker">Hacker News</option>
-                      <option value="Manual">Manual Input</option>
-                    </select>
-                  </div>
-                  <button
-                    className={`chip-btn ${highImpactOnly ? "active" : ""}`}
-                    onClick={() => setHighImpactOnly(!highImpactOnly)}
-                  >
-                    <Zap size={13} />
-                    Impact ≥ 7
-                  </button>
-                </div>
-
-                <div className="table-scroll">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>HEADLINE / SOURCE</th>
-                        <th>EVENT</th>
-                        <th>SENTIMENT</th>
-                        <th>IMPACT</th>
-                        <th>
-                          <span className="sr-only">Inspect</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredSignals.slice(0, 5).map((s) => (
-                        <tr key={s.id}>
-                          <td>
-                            <div className="signal-headline">
-                              <span className={`source-icon ${s.sourceKind}`}>
-                                {s.sourceKind === "news" ? (
-                                  <Newspaper size={15} />
-                                ) : s.sourceKind === "social" ? (
-                                  <MessageSquare size={15} />
-                                ) : (
-                                  <Sparkles size={15} />
-                                )}
-                              </span>
-                              <div>
-                                <button
-                                  className="headline-button"
-                                  onClick={() => setSelectedSignal(s)}
-                                >
-                                  {s.text}
-                                </button>
-                                <div className="source-line">
-                                  {s.tickers.map((t) => (
-                                    <b key={t}>{t}</b>
-                                  ))}
-                                  <span>{s.sourceName}</span>
-                                  <span>·</span>
-                                  <time>{clock(s.publishedAt)}</time>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td>
-                            <span
-                              className={`event-tag event-${s.event.split(" ")[0].toLowerCase()}`}
-                            >
-                              {s.event}
-                            </span>
-                          </td>
-                          <td>
-                            <span
-                              className={`sentiment-badge ${tone(s.sentiment)}`}
-                            >
-                              {s.sentiment > 0.15 ? (
-                                <ArrowUpRight size={14} />
-                              ) : s.sentiment < -0.15 ? (
-                                <ArrowDownRight size={14} />
-                              ) : (
-                                <span>~</span>
-                              )}
-                              {signed(s.sentiment)}
-                            </span>
-                          </td>
-                          <td>
-                            <div className="impact-dots">
-                              {Array.from({ length: 5 }, (_, i) => (
-                                <span
-                                  key={i}
-                                  className={`impact-dot ${
-                                    i < Math.ceil(s.impact / 2)
-                                      ? s.impact >= 7
-                                        ? "high"
-                                        : "filled"
-                                      : ""
-                                  }`}
-                                />
-                              ))}
-                              <b style={{ marginLeft: 6, fontSize: 11 }}>
-                                {s.impact}/10
-                              </b>
-                            </div>
-                          </td>
-                          <td>
-                            <button
-                              className="header-circle-btn"
-                              style={{ width: 28, height: 28 }}
-                              onClick={() => setSelectedSignal(s)}
-                            >
-                              <ChevronRight size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
-
-          {view === "flow" && flowData && (
-            <div className="flow-engine-card">
-              <div className="flow-engine-header">
-                <div>
-                  <span className="banner-pill" style={{ marginBottom: 6 }}>
-                    <Sparkles size={12} />
-                    NOVEL PREDICTIVE MODEL
-                  </span>
-                  <h2>AI Market Flow & Regime Forecaster</h2>
-                  <p>
-                    Predicts systematic institutional capital reallocations by
-                    calculating sentiment velocity, event clustering, and FinBERT
-                    probabilities across multi-source financial feeds.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flow-grid-summary">
-                <div className="flow-stat-box">
-                  <span>Current Market Regime</span>
-                  <strong style={{ fontSize: 18 }}>{flowData.regime}</strong>
-                  <small className="positive">
-                    {flowData.predictedDirection}
-                  </small>
-                </div>
-                <div className="flow-stat-box">
-                  <span>Net Inflow Probability</span>
-                  <strong>{pct(flowData.inflowProbability, 0)}</strong>
-                  <small className="positive">
-                    Score: {flowData.netFlowScore > 0 ? "+" : ""}
-                    {flowData.netFlowScore}/100
-                  </small>
-                </div>
-                <div className="flow-stat-box">
-                  <span>Predicted Volatility</span>
-                  <strong>{flowData.predicted24hVolatility}%</strong>
-                  <small className="muted">Expected 24h Band</small>
-                </div>
-                <div className="flow-stat-box">
-                  <span>Model Directional Accuracy</span>
-                  <strong>
-                    {flowData.historicalAccuracy.directionalAccuracy}%
-                  </strong>
-                  <small className="positive">
-                    Info Ratio: {flowData.historicalAccuracy.simulatedInformationRatio}
-                  </small>
-                </div>
-              </div>
-
-              <div className="section-head" style={{ marginTop: 20 }}>
-                <h2>Cross-Asset Predicted Capital Flows</h2>
-                <span>Projected 24-Hour Capital Flow Direction</span>
-              </div>
-
-              <div className="cross-asset-row">
-                <div className="asset-flow-tile">
-                  <span>Large-Cap Equities</span>
-                  <b
-                    style={{
-                      color:
-                        flowData.crossAssetFlows.equitiesMillions >= 0
-                          ? "#059669"
-                          : "#dc2626",
-                    }}
-                  >
-                    {flowData.crossAssetFlows.equitiesMillions >= 0 ? "+" : ""}
-                    ${flowData.crossAssetFlows.equitiesMillions}M
-                  </b>
-                </div>
-                <div className="asset-flow-tile">
-                  <span>Sovereign & IG Bonds</span>
-                  <b
-                    style={{
-                      color:
-                        flowData.crossAssetFlows.bondsMillions >= 0
-                          ? "#059669"
-                          : "#dc2626",
-                    }}
-                  >
-                    {flowData.crossAssetFlows.bondsMillions >= 0 ? "+" : ""}
-                    ${flowData.crossAssetFlows.bondsMillions}M
-                  </b>
-                </div>
-                <div className="asset-flow-tile">
-                  <span>Money Market / Cash</span>
-                  <b
-                    style={{
-                      color:
-                        flowData.crossAssetFlows.moneyMarketMillions >= 0
-                          ? "#059669"
-                          : "#dc2626",
-                    }}
-                  >
-                    {flowData.crossAssetFlows.moneyMarketMillions >= 0 ? "+" : ""}
-                    ${flowData.crossAssetFlows.moneyMarketMillions}M
-                  </b>
-                </div>
-              </div>
-
-              <div className="section-head" style={{ marginTop: 24 }}>
-                <h2>Stock-by-Stock Institutional Order Flow Matrix</h2>
-                <span>Predicted Net Flow, Regime, Momentum & Primary Driver</span>
-              </div>
-
-              <div className="table-scroll">
-                <table className="flow-matrix-table">
-                  <thead>
-                    <tr>
-                      <th>ASSET</th>
-                      <th>PREDICTED FLOW</th>
-                      <th>REGIME</th>
-                      <th>MOMENTUM</th>
-                      <th>EXPECTED DRIFT</th>
-                      <th>PRIMARY DRIVING HEADLINE</th>
+                        {signed(h.sentiment)}
+                      </td>
+                      <td>{h.signalCount}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {flowData.stockFlows.map((sf) => (
-                      <tr key={sf.ticker}>
-                        <td>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <StockLogo ticker={sf.ticker} size={22} />
-                            <div>
-                              <b>{sf.name}</b> ({sf.ticker})
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <b
-                            style={{
-                              color:
-                                sf.predictedFlowMillions >= 0
-                                  ? "#059669"
-                                  : "#dc2626",
-                            }}
-                          >
-                            {sf.predictedFlowMillions >= 0 ? "+" : "-"}$
-                            {Math.abs(sf.predictedFlowMillions).toFixed(1)}M
-                          </b>
-                        </td>
-                        <td>
-                          <span
-                            className={`regime-badge ${sf.regime.toLowerCase()}`}
-                          >
-                            {sf.regime}
-                          </span>
-                        </td>
-                        <td>
-                          <span>{sf.momentumScore}/100</span>
-                          <span className="meter-track">
-                            <span
-                              className="meter-fill"
-                              style={{ width: `${sf.momentumScore}%` }}
-                            />
-                          </span>
-                        </td>
-                        <td
-                          style={{
-                            color:
-                              sf.expectedDriftPct >= 0
-                                ? "#059669"
-                                : "#dc2626",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {sf.expectedDriftPct >= 0 ? "+" : ""}
-                          {sf.expectedDriftPct.toFixed(2)}%
-                        </td>
-                        <td
-                          style={{
-                            maxWidth: 320,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            color: "#475569",
-                          }}
-                          title={sf.primaryDriver}
-                        >
-                          {sf.primaryDriver}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Wholesale Stress Testing View (Module B) */}
+        {view === "stress" && (
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <h2>Wholesale Banking Portfolio Stress Test (Module B)</h2>
+                <p>Simulate real-world NLP risk shocks on a synthetic $100M banking asset portfolio</p>
               </div>
             </div>
-          )}
 
-          {view === "signals" && (
-            <div className="panel" style={{ marginBottom: 24 }}>
-              <div className="panel-head">
-                <div>
-                  <h2>
-                    Signal Intelligence Explorer{" "}
-                    <span className="count-pill">
-                      {filteredSignals.length}
-                    </span>
-                  </h2>
-                  <p>Filter by company, news source, event severity, and NLP sentiment</p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+              {stressScenarios.map((sc, i) => (
+                <button
+                  key={sc.title}
+                  className={selectedStressScenario === i ? "btn-primary-pill" : "btn-secondary-pill"}
+                  onClick={() => setSelectedStressScenario(i)}
+                >
+                  {sc.title} (Severity {sc.severity}/10)
+                </button>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 16,
+                marginBottom: 24,
+              }}
+            >
+              <div className="investio-card" style={{ padding: 18 }}>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Pre-Stress Portfolio</span>
+                <h3 style={{ fontSize: 22, margin: "4px 0" }}>$100.00M</h3>
+                <small style={{ color: "#64748b" }}>Baseline assets</small>
+              </div>
+              <div className="investio-card" style={{ padding: 18 }}>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Post-Stress Portfolio</span>
+                <h3 style={{ fontSize: 22, margin: "4px 0" }}>
+                  ${(totalStressed / 1_000_000).toFixed(2)}M
+                </h3>
+                <small style={{ color: totalPct < 0 ? "#dc2626" : "#059669" }}>
+                  {totalPct.toFixed(2)}% net change
+                </small>
+              </div>
+              <div className="investio-card" style={{ padding: 18 }}>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Simulated Value Impact</span>
+                <h3
+                  style={{
+                    fontSize: 22,
+                    margin: "4px 0",
+                    color: totalDelta < 0 ? "#dc2626" : "#059669",
+                  }}
+                >
+                  {totalDelta < 0 ? "-" : "+"}${ (Math.abs(totalDelta) / 1_000_000).toFixed(2) }M
+                </h3>
+                <small style={{ color: "#64748b" }}>Asset markdown</small>
+              </div>
+              <div className="investio-card" style={{ padding: 18 }}>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Basel Capital Status</span>
+                <h3 style={{ fontSize: 22, margin: "4px 0", color: "#059669" }}>14.2% Tier-1</h3>
+                <small style={{ color: "#059669" }}>Adequacy compliant</small>
+              </div>
+            </div>
+
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Asset Class</th>
+                    <th>Pre-Stress Value</th>
+                    <th>Simulated Shock</th>
+                    <th>Post-Stress Value</th>
+                    <th>Net P&amp;L Impact</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stressedAssets.map((asset) => (
+                    <tr key={asset.name}>
+                      <td><b>{asset.name}</b></td>
+                      <td>${(asset.base / 1_000_000).toFixed(2)}M</td>
+                      <td style={{ color: asset.shock < 0 ? "#dc2626" : "#059669", fontWeight: 600 }}>
+                        {asset.shock >= 0 ? "+" : ""}{(asset.shock * 100).toFixed(2)}%
+                      </td>
+                      <td>${(asset.stressed / 1_000_000).toFixed(2)}M</td>
+                      <td style={{ color: asset.delta < 0 ? "#dc2626" : "#059669", fontWeight: 700 }}>
+                        {asset.delta < 0 ? "-" : "+"}${ (Math.abs(asset.delta) / 1_000_000).toFixed(2) }M
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Market Flow View (Novel Feature) */}
+        {view === "flow" && flowData && (
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <h2>AI Market Flow &amp; Regime Forecaster</h2>
+                <p>Predicts systematic institutional capital reallocations using NLP sentiment velocity</p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, 1fr)",
+                gap: 16,
+                marginBottom: 24,
+              }}
+            >
+              <div className="investio-card" style={{ padding: 18 }}>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Current Market Regime</span>
+                <h3 style={{ fontSize: 20, margin: "4px 0" }}>{flowData.regime}</h3>
+                <small style={{ color: "#059669" }}>{flowData.predictedDirection}</small>
+              </div>
+              <div className="investio-card" style={{ padding: 18 }}>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Net Inflow Probability</span>
+                <h3 style={{ fontSize: 20, margin: "4px 0" }}>{pct(flowData.inflowProbability, 0)}</h3>
+                <small style={{ color: "#059669" }}>Score: {flowData.netFlowScore}/100</small>
+              </div>
+              <div className="investio-card" style={{ padding: 18 }}>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Predicted 24h Volatility</span>
+                <h3 style={{ fontSize: 20, margin: "4px 0" }}>{flowData.predicted24hVolatility}%</h3>
+                <small style={{ color: "#64748b" }}>Expected trading band</small>
+              </div>
+              <div className="investio-card" style={{ padding: 18 }}>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Directional Accuracy</span>
+                <h3 style={{ fontSize: 20, margin: "4px 0" }}>
+                  {flowData.historicalAccuracy.directionalAccuracy}%
+                </h3>
+                <small style={{ color: "#059669" }}>
+                  Info Ratio: {flowData.historicalAccuracy.simulatedInformationRatio}
+                </small>
+              </div>
+            </div>
+
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Predicted Flow</th>
+                    <th>Regime</th>
+                    <th>Momentum</th>
+                    <th>Expected Drift</th>
+                    <th>Primary Driving Headline</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {flowData.stockFlows.map((sf) => (
+                    <tr key={sf.ticker}>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <StockLogo ticker={sf.ticker} size={22} />
+                          <div>
+                            <b>{sf.name}</b> ({sf.ticker})
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ color: sf.predictedFlowMillions >= 0 ? "#059669" : "#dc2626", fontWeight: 700 }}>
+                        {sf.predictedFlowMillions >= 0 ? "+" : "-"}${ Math.abs(sf.predictedFlowMillions).toFixed(1) }M
+                      </td>
+                      <td>
+                        <span className="event-tag">{sf.regime}</span>
+                      </td>
+                      <td>{sf.momentumScore}/100</td>
+                      <td style={{ color: sf.expectedDriftPct >= 0 ? "#059669" : "#dc2626", fontWeight: 600 }}>
+                        {sf.expectedDriftPct >= 0 ? "+" : ""}{sf.expectedDriftPct.toFixed(2)}%
+                      </td>
+                      <td style={{ maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {sf.primaryDriver}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Signals View */}
+        {view === "signals" && (
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <h2>Multi-Source Signal Intelligence Explorer</h2>
+                <p>Filter by company, news provider, severity rating, and NLP sentiment</p>
+              </div>
+            </div>
+
+            <div className="feed-filters">
+              <div className="feed-search-box">
+                <Search size={14} color="#64748b" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search headlines, company or event..."
+                />
+              </div>
+
+              <select
+                className="feed-select"
+                value={eventFilter}
+                onChange={(e) => setEventFilter(e.target.value)}
+              >
+                <option value="all">All Events</option>
+                {EVENTS.map((ev) => (
+                  <option key={ev} value={ev}>
+                    {ev}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                className="feed-select"
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value)}
+              >
+                <option value="all">All Sources</option>
+                <option value="Google">Google News RSS</option>
+                <option value="Yahoo">Yahoo Finance</option>
+                <option value="GDELT">GDELT Global</option>
+                <option value="Hacker">Hacker News</option>
+                <option value="Manual">Manual Input</option>
+              </select>
+
+              <button
+                className={highImpactOnly ? "btn-primary-pill" : "btn-secondary-pill"}
+                onClick={() => setHighImpactOnly(!highImpactOnly)}
+              >
+                Impact &ge; 7
+              </button>
+            </div>
+
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Headline / Source</th>
+                    <th>Event</th>
+                    <th>Sentiment</th>
+                    <th>Impact Severity</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSignals.map((s) => (
+                    <tr key={s.id}>
+                      <td>
+                        <div>
+                          <div style={{ fontWeight: 600, color: "#0f172a", marginBottom: 3 }}>
+                            {s.text}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#64748b" }}>
+                            {s.tickers.join(", ")} · {s.sourceName} · {clock(s.publishedAt)}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="event-tag">{s.event}</span>
+                      </td>
+                      <td>
+                        <span className={`sentiment-badge ${tone(s.sentiment)}`}>
+                          {signed(s.sentiment)}
+                        </span>
+                      </td>
+                      <td>
+                        <b>{s.impact}/10</b>
+                      </td>
+                      <td>
+                        <button
+                          className="btn-secondary-pill"
+                          style={{ padding: "4px 8px", fontSize: 11 }}
+                          onClick={() => setSelectedSignal(s)}
+                        >
+                          Inspect
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Methodology View */}
+        {view === "method" && (
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <h2>System Architecture &amp; Methodology</h2>
+                <p>S&amp;P Global &amp; CRISIL Financial Risk Engine Specifications</p>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+              <div className="investio-card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: 15, marginBottom: 8 }}>1. Unified AI/NLP Risk Engine</h3>
+                <p style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>
+                  The engine utilizes local CPU inference with quantized <b>FinBERT</b> to calculate
+                  sentiment probabilities (P(positive) - P(negative)). Transparent event rules categorize
+                  incoming text across 8 financial classes (Credit, Geopolitical, Regulatory, Macroeconomic,
+                  M&amp;A, Earnings, Product, Operational) with severity scaling from 1 to 10.
+                </p>
+              </div>
+
+              <div className="investio-card" style={{ padding: 20 }}>
+                <h3 style={{ fontSize: 15, marginBottom: 8 }}>2. Downstream Module A &amp; B</h3>
+                <p style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>
+                  <b>Module A</b> implements dynamic portfolio rebalancing with exponential sentiment decay
+                  (6-hour half-life), strict 5% to 20% position bounds, and an 8% turnover constraint per batch.
+                  <b>Module B</b> simulates macroeconomic shocks across wholesale banking asset tranches.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Advanced Chart & Deep Risk Inspector Modal */}
+        {showAdvancedModal && (
+          <Modal
+            title={`${STOCK_META[selectedStock]?.name ?? selectedStock} (${selectedStock}) — Deep Surveillance`}
+            subtitle={`Live real-time feed · Current Price: $${activeStockState.price.toFixed(2)}`}
+            close={() => setShowAdvancedModal(false)}
+          >
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ height: 260, width: "100%", marginBottom: 16 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={activeStockState.history}
+                    margin={{ top: 10, right: 10, bottom: 0, left: 0 }}
+                  >
+                    <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="time" tick={{ fill: "#94a3b8", fontSize: 10 }} tickLine={false} axisLine={false} />
+                    <YAxis
+                      yAxisId="p"
+                      domain={["auto", "auto"]}
+                      tickFormatter={(v) => `$${Number(v).toFixed(1)}`}
+                      tick={{ fill: "#94a3b8", fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      orientation="right"
+                    />
+                    <YAxis yAxisId="v" domain={[0, "dataMax * 4"]} hide />
+                    <Tooltip
+                      contentStyle={{
+                        background: "#0f172a",
+                        border: "none",
+                        borderRadius: 8,
+                        color: "#ffffff",
+                        fontSize: 11,
+                        padding: "8px 12px",
+                      }}
+                      formatter={(v, name) => [
+                        name === "price" ? `$${Number(v).toFixed(2)}` : `${Number(v).toLocaleString()} units`,
+                        name === "price" ? "Live Price" : "Volume",
+                      ]}
+                    />
+                    <Bar yAxisId="v" dataKey="volume" fill="#cbd5e1" radius={[2, 2, 0, 0]} maxBarSize={12} isAnimationActive={false} />
+                    <Area
+                      yAxisId="p"
+                      type="monotone"
+                      dataKey="price"
+                      stroke="#2563eb"
+                      strokeWidth={2.2}
+                      fill="#eff6ff"
+                      isAnimationActive={false}
+                    />
+                    <Line yAxisId="p" type="monotone" dataKey="ma" stroke="#6366f1" strokeWidth={1.5} dot={false} strokeDasharray="3 3" isAnimationActive={false} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Level 2 Market Depth Table */}
+              <div style={{ borderTop: "1px solid #e2e8f0", paddingTop: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <b style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>Level 2 Market Depth</b>
+                  <span style={{ fontSize: 11, color: "#64748b" }}>
+                    Bids: {marketDepth.totalBuyQty.toLocaleString()} vs Asks: {marketDepth.totalSellQty.toLocaleString()}
+                  </span>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                  <div>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Orders</th>
+                          <th>Qty</th>
+                          <th>Bid Price</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {marketDepth.bids.map((b, i) => (
+                          <tr key={i}>
+                            <td>{b.orders}</td>
+                            <td>{b.quantity.toLocaleString()}</td>
+                            <td style={{ color: "#1d4ed8", fontWeight: 700 }}>${b.price.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Ask Price</th>
+                          <th>Qty</th>
+                          <th>Orders</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {marketDepth.asks.map((a, i) => (
+                          <tr key={i}>
+                            <td style={{ color: "#dc2626", fontWeight: 700 }}>${a.price.toFixed(2)}</td>
+                            <td>{a.quantity.toLocaleString()}</td>
+                            <td>{a.orders}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Executive Report Dossier Modal */}
+        {showReportModal && (
+          <Modal
+            title="Executive Risk & Capital Audit Report"
+            subtitle="Prepared for S&P Global & CRISIL Campus Hackathon Evaluation"
+            close={() => setShowReportModal(false)}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div className="investio-card" style={{ padding: 16, background: "#f8fafc" }}>
+                <span style={{ fontSize: 11, color: "#64748b" }}>Portfolio Summary</span>
+                <h3 style={{ fontSize: 18, margin: "4px 0" }}>$100.00M Multi-Asset Book</h3>
+                <p style={{ fontSize: 12, color: "#475569" }}>
+                  Active holdings across Large-Cap Equities, Corporate Loans, Sovereign IG Bonds, and Rates/FX Derivatives.
+                </p>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="investio-card" style={{ padding: 14 }}>
+                  <span style={{ fontSize: 11, color: "#64748b" }}>FinBERT Directional Accuracy</span>
+                  <h4 style={{ fontSize: 16, margin: "4px 0" }}>74.2%</h4>
+                </div>
+                <div className="investio-card" style={{ padding: 14 }}>
+                  <span style={{ fontSize: 11, color: "#64748b" }}>Information Ratio</span>
+                  <h4 style={{ fontSize: 16, margin: "4px 0" }}>1.48</h4>
                 </div>
               </div>
 
-              <div className="feed-filters">
-                <div className="search-box">
-                  <Search size={14} />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search company, ticker or keyword..."
-                  />
-                </div>
-                <div className="select-box">
-                  <SlidersHorizontal size={14} />
-                  <select
-                    value={eventFilter}
-                    onChange={(e) => setEventFilter(e.target.value)}
-                  >
-                    <option value="all">All Events</option>
-                    {EVENTS.map((ev) => (
-                      <option key={ev} value={ev}>
-                        {ev}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="select-box">
-                  <Database size={14} />
-                  <select
-                    value={sourceFilter}
-                    onChange={(e) => setSourceFilter(e.target.value)}
-                  >
-                    <option value="all">All News Sources</option>
-                    <option value="Google">Google News RSS</option>
-                    <option value="Yahoo">Yahoo Finance</option>
-                    <option value="GDELT">GDELT Global</option>
-                    <option value="Hacker">Hacker News</option>
-                    <option value="Manual">Manual Input</option>
-                  </select>
-                </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 10 }}>
                 <button
-                  className={`chip-btn ${highImpactOnly ? "active" : ""}`}
-                  onClick={() => setHighImpactOnly(!highImpactOnly)}
+                  className="btn-primary-pill"
+                  onClick={() => window.open("/api/export", "_blank")}
                 >
-                  <Zap size={13} />
-                  Impact ≥ 7
+                  <Download size={13} />
+                  Download JSON Audit File
                 </button>
               </div>
-
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>HEADLINE / SOURCE</th>
-                      <th>EVENT</th>
-                      <th>SENTIMENT</th>
-                      <th>IMPACT</th>
-                      <th>
-                        <span className="sr-only">Details</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredSignals.map((s) => (
-                      <tr key={s.id}>
-                        <td>
-                          <div className="signal-headline">
-                            <span className={`source-icon ${s.sourceKind}`}>
-                              {s.sourceKind === "news" ? (
-                                <Newspaper size={15} />
-                              ) : s.sourceKind === "social" ? (
-                                <MessageSquare size={15} />
-                              ) : (
-                                <Sparkles size={15} />
-                              )}
-                            </span>
-                            <div>
-                              <button
-                                className="headline-button"
-                                onClick={() => setSelectedSignal(s)}
-                              >
-                                {s.text}
-                              </button>
-                              <div className="source-line">
-                                {s.tickers.map((t) => (
-                                  <b key={t}>{t}</b>
-                                ))}
-                                <span>{s.sourceName}</span>
-                                <span>·</span>
-                                <time>{clock(s.publishedAt)}</time>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          <span
-                            className={`event-tag event-${s.event.split(" ")[0].toLowerCase()}`}
-                          >
-                            {s.event}
-                          </span>
-                        </td>
-                        <td>
-                          <span
-                            className={`sentiment-badge ${tone(s.sentiment)}`}
-                          >
-                            {s.sentiment > 0.15 ? (
-                              <ArrowUpRight size={14} />
-                            ) : s.sentiment < -0.15 ? (
-                              <ArrowDownRight size={14} />
-                            ) : (
-                              <span>~</span>
-                            )}
-                            {signed(s.sentiment)}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="impact-dots">
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <span
-                                key={i}
-                                className={`impact-dot ${
-                                  i < Math.ceil(s.impact / 2)
-                                    ? s.impact >= 7
-                                      ? "high"
-                                      : "filled"
-                                    : ""
-                                }}`}
-                              />
-                            ))}
-                            <b style={{ marginLeft: 6, fontSize: 11 }}>
-                              {s.impact}/10
-                            </b>
-                          </div>
-                        </td>
-                        <td>
-                          <button
-                            className="header-circle-btn"
-                            style={{ width: 28, height: 28 }}
-                            onClick={() => setSelectedSignal(s)}
-                          >
-                            <ChevronRight size={14} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
             </div>
-          )}
+          </Modal>
+        )}
 
-          {view === "portfolio" && (
-            <div className="panel" style={{ marginBottom: 24 }}>
-              <div className="panel-head">
-                <div>
-                  <h2>Tactical Rebalancing Allocation (Module A)</h2>
-                  <p>10-Stock S&P Portfolio Target Weights (5% to 20% Bounds)</p>
+        {/* Signal Inspector Modal */}
+        {selectedSignal && (
+          <Modal
+            title="Structured NLP Signal Inspector"
+            subtitle={`${selectedSignal.sourceName} · ${clock(selectedSignal.publishedAt)} · ${selectedSignal.model}`}
+            close={() => setSelectedSignal(null)}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a", lineHeight: 1.5 }}>
+                {selectedSignal.text}
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+                <div className="investio-card" style={{ padding: 12 }}>
+                  <span style={{ fontSize: 10, color: "#64748b" }}>Sentiment</span>
+                  <h4 style={{ fontSize: 16, margin: "4px 0", color: selectedSignal.sentiment > 0.15 ? "#059669" : selectedSignal.sentiment < -0.15 ? "#dc2626" : "#475569" }}>
+                    {signed(selectedSignal.sentiment)}
+                  </h4>
+                </div>
+                <div className="investio-card" style={{ padding: 12 }}>
+                  <span style={{ fontSize: 10, color: "#64748b" }}>Event Class</span>
+                  <h4 style={{ fontSize: 14, margin: "4px 0" }}>{selectedSignal.event}</h4>
+                </div>
+                <div className="investio-card" style={{ padding: 12 }}>
+                  <span style={{ fontSize: 10, color: "#64748b" }}>Impact Severity</span>
+                  <h4 style={{ fontSize: 16, margin: "4px 0" }}>{selectedSignal.impact}/10</h4>
                 </div>
               </div>
 
-              <div className="table-scroll" style={{ padding: "16px 26px" }}>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>COMPANY</th>
-                      <th>SECTOR</th>
-                      <th>CURRENT ALLOCATION</th>
-                      <th>PREVIOUS WEIGHT</th>
-                      <th>SENTIMENT</th>
-                      <th>SIGNALS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data?.holdings.map((h) => {
-                      const delta = (h.weight - h.previousWeight) * 100;
-                      return (
-                        <tr key={h.ticker}>
-                          <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <StockLogo ticker={h.ticker} size={22} />
-                              <div>
-                                <b>{h.name}</b> ({h.ticker})
-                              </div>
-                            </div>
-                          </td>
-                          <td>{h.sector}</td>
-                          <td>
-                            <b>{pct(h.weight, 2)}</b>
-                          </td>
-                          <td>{pct(h.previousWeight, 2)}</td>
-                          <td
-                            style={{
-                              color:
-                                h.sentiment > 0.15
-                                  ? "#059669"
-                                  : h.sentiment < -0.15
-                                    ? "#dc2626"
-                                    : "#64748b",
-                              fontWeight: 600,
-                            }}
-                          >
-                            {signed(h.sentiment)}
-                          </td>
-                          <td>{h.signalCount}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div style={{ background: "#f8fafc", padding: 12, borderRadius: 8, fontSize: 11, color: "#475569" }}>
+                <b>Engine Evidence:</b> {selectedSignal.evidence?.join(", ") || "Derived via FinBERT sentiment and rule classification."}
               </div>
             </div>
-          )}
+          </Modal>
+        )}
 
-          {view === "stress" && (
-            <div className="stress-card">
-              <div className="stress-header">
-                <div>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: "#2563eb",
-                    }}
-                  >
-                    MODULE B: STRESS TESTING
-                  </span>
-                  <h2>Wholesale Banking Portfolio Stress Test</h2>
-                  <p>
-                    Simulate real-world NLP risk shocks on a synthetic $100M
-                    banking asset portfolio.
-                  </p>
-                </div>
-              </div>
+        {/* Analyze Text Modal */}
+        {analyze && (
+          <Modal
+            title="Submit Text for Real-Time Risk Analysis"
+            subtitle="Feeds custom headline directly into local FinBERT inference engine"
+            close={() => setAnalyze(false)}
+          >
+            <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Type or paste financial headline or social news..."
+                rows={3}
+                style={{
+                  width: "100%",
+                  padding: 12,
+                  fontSize: 13,
+                  border: "1px solid #cbd5e1",
+                  borderRadius: 8,
+                  outline: "none",
+                }}
+              />
 
-              <div className="stress-scenarios-bar">
-                {stressScenarios.map((sc, i) => (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {SAMPLE_PROMPTS.map((p, i) => (
                   <button
-                    key={sc.title}
-                    className={`scenario-pill ${
-                      selectedStressScenario === i ? "active" : ""
-                    }`}
-                    onClick={() => setSelectedStressScenario(i)}
+                    key={i}
+                    type="button"
+                    className="btn-secondary-pill"
+                    style={{ fontSize: 10, padding: "4px 8px" }}
+                    onClick={() => setText(p)}
                   >
-                    <Zap size={13} />
-                    {sc.title} (Severity {sc.severity}/10)
+                    Preset {i + 1}
                   </button>
                 ))}
               </div>
 
-              <div className="stress-metrics-grid">
-                <div className="stress-stat">
-                  <span>Pre-Stress Portfolio</span>
-                  <strong>$100.00M</strong>
-                  <small style={{ color: "#64748b" }}>Baseline assets</small>
-                </div>
-                <div className="stress-stat">
-                  <span>Post-Stress Portfolio</span>
-                  <strong>${(totalStressed / 1_000_000).toFixed(2)}M</strong>
-                  <small
-                    style={{
-                      color: totalPct < 0 ? "#dc2626" : "#059669",
-                    }}
-                  >
-                    {totalPct.toFixed(2)}% net change
-                  </small>
-                </div>
-                <div className="stress-stat">
-                  <span>Simulated Value Impact</span>
-                  <strong
-                    style={{
-                      color: totalDelta < 0 ? "#dc2626" : "#059669",
-                    }}
-                  >
-                    {totalDelta < 0 ? "-" : "+"}$
-                    {(Math.abs(totalDelta) / 1_000_000).toFixed(2)}M
-                  </strong>
-                  <small style={{ color: "#64748b" }}>Asset markdown</small>
-                </div>
-                <div className="stress-stat">
-                  <span>Basel Capital Status</span>
-                  <strong
-                    style={{
-                      color: totalPct < -5 ? "#dc2626" : "#059669",
-                    }}
-                  >
-                    {totalPct < -5 ? "Buffer Impaired" : "Adequate Capital"}
-                  </strong>
-                  <small style={{ color: "#64748b" }}>Tier-1 capital test</small>
-                </div>
-              </div>
-
-              <div className="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>ASSET CLASS</th>
-                      <th>INITIAL VALUE</th>
-                      <th>APPLIED SHOCK</th>
-                      <th>STRESSED VALUE</th>
-                      <th>VALUE DELTA</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stressedAssets.map((r) => (
-                      <tr key={r.name}>
-                        <td>
-                          <b>{r.name}</b>
-                        </td>
-                        <td>${(r.base / 1_000_000).toFixed(1)}M</td>
-                        <td
-                          style={{
-                            color:
-                              r.shock > 0
-                                ? "#059669"
-                                : r.shock < 0
-                                  ? "#dc2626"
-                                  : "#64748b",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {r.shock >= 0 ? "+" : ""}
-                          {(r.shock * 100).toFixed(1)}%
-                        </td>
-                        <td>
-                          <b>${(r.stressed / 1_000_000).toFixed(2)}M</b>
-                        </td>
-                        <td
-                          style={{
-                            color:
-                              r.delta > 0
-                                ? "#059669"
-                                : r.delta < 0
-                                  ? "#dc2626"
-                                  : "#64748b",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {r.delta >= 0 ? "+" : "-"}$
-                          {(Math.abs(r.delta) / 1_000_000).toFixed(2)}M
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {view === "sources" && (
-            <div className="source-cards">
-              {data?.sources.map((s) => (
-                <div className="source-card" key={s.name}>
-                  <div className="source-card-top">
-                    <span className="source-large-icon">
-                      {s.kind === "news" ? (
-                        <Newspaper size={20} />
-                      ) : (
-                        <MessageSquare size={20} />
-                      )}
-                    </span>
-                    <span className="status-pill">
-                      <i
-                        style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: "50%",
-                          background: "#10b981",
-                        }}
-                      />
-                      Active
-                    </span>
-                  </div>
-                  <h3 style={{ fontSize: 16, fontWeight: 700, margin: "6px 0" }}>
-                    {s.name}
-                  </h3>
-                  <p style={{ fontSize: 12, color: "#64748b", lineHeight: 1.6 }}>
-                    Ingesting public news headlines into FinBERT sentiment pipeline.
-                  </p>
-                  <div
-                    style={{
-                      borderTop: "1px solid #edf0f4",
-                      paddingTop: 12,
-                      marginTop: 16,
-                      fontSize: 11,
-                      color: "#94a3b8",
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <span>{s.fetched} documents</span>
-                    <span>Last fetch {clock(s.lastFetched)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {view === "method" && (
-            <div className="method-grid">
-              {[
-                [
-                  "01",
-                  "Multi-Source Ingestion",
-                  "Google News RSS, GDELT Project, Yahoo Finance, and Hacker News ingested with deduplication.",
-                ],
-                [
-                  "02",
-                  "FinBERT NLP Inference",
-                  "Local quantized FinBERT calculates positive, negative, and neutral probabilities with transparent arithmetic.",
-                ],
-                [
-                  "03",
-                  "Predictive Market Flow Engine",
-                  "Novel AI order flow model forecasts institutional inflows, volatility shifts, and cross-asset flow reallocations.",
-                ],
-                [
-                  "04",
-                  "Tactical Index Rebalancing",
-                  "Decayed sentiment informs target stock weights bounded between 5% and 20% with 8% turnover limit.",
-                ],
-              ].map(([num, title, body]) => (
-                <div key={num} className="method-card">
-                  <span className="method-number">{num}</span>
-                  <h2>{title}</h2>
-                  <p>{body}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <footer>
-            <span>
-              <Activity size={14} />
-              <b>GoRisk</b> · S&P Global & CRISIL Campus Hackathon
-            </span>
-            <div>
-              <span>Updated {clock(data?.stats.lastUpdated ?? null)}</span>
-              <a href="/api/export" download>
-                <Download size={14} />
-                Export Data
-              </a>
-            </div>
-          </footer>
-        </main>
-      </div>
-
-      {selectedSignal && (
-        <SignalDetail
-          signal={selectedSignal}
-          close={() => setSelectedSignal(null)}
-        />
-      )}
-
-      {analyze && (
-        <Modal
-          title="Analyze text into risk signal & predicted flow"
-          subtitle="Submit custom financial text for real-time FinBERT inference, flow forecasting, and index rebalancing."
-          close={() => setAnalyze(false)}
-        >
-          <form onSubmit={submit}>
-            <div className="sample-chips">
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: "#64748b",
-                  marginBottom: 2,
-                }}
-              >
-                Sample scenarios (click to test):
-              </span>
-              {SAMPLE_PROMPTS.map((prompt) => (
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
                 <button
                   type="button"
-                  key={prompt}
-                  className="sample-chip"
-                  onClick={() => setText(prompt)}
+                  className="btn-secondary-pill"
+                  onClick={() => setAnalyze(false)}
                 >
-                  {prompt}
+                  Cancel
                 </button>
-              ))}
-            </div>
-
-            <textarea
-              id="headline"
-              autoFocus
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              minLength={10}
-              maxLength={6000}
-              rows={4}
-              required
-              placeholder="e.g. Apple reports record quarterly iPhone revenue beating Wall Street estimates…"
-            />
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 10,
-                marginTop: 18,
-              }}
-            >
-              <button
-                className="button secondary"
-                type="button"
-                onClick={() => setAnalyze(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="button primary"
-                type="submit"
-                disabled={!!pending || text.trim().length < 10}
-              >
-                {pending ? (
-                  <LoaderCircle size={14} className="spin" />
-                ) : (
-                  <Sparkles size={14} />
-                )}
-                Analyze Signal
-              </button>
-            </div>
-          </form>
-        </Modal>
-      )}
+                <button
+                  type="submit"
+                  className="btn-primary-pill"
+                  disabled={text.trim().length < 10 || busy}
+                >
+                  Process Text
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+      </main>
     </div>
   );
 }
