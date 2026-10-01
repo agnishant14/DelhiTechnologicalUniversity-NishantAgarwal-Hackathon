@@ -229,3 +229,22 @@ export interface MarketFlowForecast {
     simulatedInformationRatio: number;
   };
 }
+
+export interface DatasetItem {
+  id: string;
+  text: string;
+  sourceKind: "news" | "social";
+  sourceName: string;
+  dataset: string;
+  sentimentGroundTruth?: "positive" | "negative" | "neutral";
+  publishedAt: string;
+}
+
+export interface DatasetQueryResponse {
+  total: number;
+  filteredCount: number;
+  limit: number;
+  offset: number;
+  records: DatasetItem[];
+}
+
