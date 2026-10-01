@@ -277,20 +277,53 @@ a {
 .investio-ticker-strip {
   background: #ffffff;
   border-bottom: 1px solid var(--line);
-  padding: 0 28px;
   height: 38px;
   display: flex;
   align-items: center;
-  gap: 24px;
-  overflow-x: auto;
-  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+  user-select: none;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 32px,
+    black calc(100% - 32px),
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 32px,
+    black calc(100% - 32px),
+    transparent 100%
+  );
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  animation: ticker-marquee 36s linear infinite;
+  will-change: transform;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+.ticker-group {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding-right: 32px;
 }
 
 .ticker-item {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-size: 11px;
+  white-space: nowrap;
 }
 
 .ticker-item span.ticker-name {
@@ -303,6 +336,7 @@ a {
 .ticker-item span.ticker-val {
   font-weight: 600;
   color: var(--text-main);
+  font-variant-numeric: tabular-nums;
 }
 
 .ticker-item span.ticker-delta.positive {
@@ -313,6 +347,15 @@ a {
 .ticker-item span.ticker-delta.negative {
   color: var(--red);
   font-weight: 600;
+}
+
+@keyframes ticker-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
 }
 
 /* =========================================================
