@@ -191,8 +191,8 @@ const tone = (n: number) =>
   n > 0.15 ? "positive" : n < -0.15 ? "negative" : "neutral";
 const clock = (s: string | null) =>
   s
-    ? new Date(s).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    : "10:36am";
+    ? new Date(s).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
 async function api<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(
@@ -319,9 +319,34 @@ export default function App() {
   const [highImpactOnly, setHighImpactOnly] = useState(false);
   const [selectedStressScenario, setSelectedStressScenario] = useState(0);
   const [isStreaming, setIsStreaming] = useState(true);
+  const [liveTime, setLiveTime] = useState<string>(() =>
+    new Date().toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+    }),
+  );
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveTime(
+        new Date().toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit",
+        }),
+      );
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const [liveStocks, setLiveStocks] = useState<Record<string, StockLiveState>>(() => {
     const init: Record<string, StockLiveState> = {};
+    const initialFormatted = new Date().toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      second: "2-digit",
+    });
     for (const stk of STOCKS) {
       const { ticks, openPrice } = generateInitialTicks(stk.ticker, "1D", 0);
       const last = ticks[ticks.length - 1];
@@ -337,6 +362,7 @@ export default function App() {
         volume: ticks.reduce((acc, t) => acc + t.volume, 0),
         flash: null,
         history: ticks,
+        lastUpdated: initialFormatted,
       };
     }
     return init;
@@ -478,6 +504,11 @@ export default function App() {
             volume: cur.volume + tick.volume,
             flash: tick.price > cur.price ? "up" : tick.price < cur.price ? "down" : null,
             history: [...cur.history.slice(-32), tick],
+            lastUpdated: new Date().toLocaleTimeString([], {
+              hour: "numeric",
+              minute: "2-digit",
+              second: "2-digit",
+            }),
           };
         }
         return next;
@@ -857,7 +888,19 @@ export default function App() {
                             <b>
                               {ticker} ({meta.name})
                             </b>
-                            <span>Updated: Live 10:36am</span>
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  width: 6,
+                                  height: 6,
+                                  borderRadius: "50%",
+                                  backgroundColor: "#10b981",
+                                  boxShadow: "0 0 6px #10b981",
+                                }}
+                              />
+                              Updated: Live {stock?.lastUpdated ?? liveTime}
+                            </span>
                           </div>
                         </div>
 
@@ -1358,7 +1401,7 @@ export default function App() {
         {showAdvancedModal && (
           <Modal
             title={`${STOCK_META[selectedStock]?.name ?? selectedStock} (${selectedStock}) — Deep Surveillance`}
-            subtitle={`Live real-time feed · Current Price: $${activeStockState.price.toFixed(2)}`}
+            subtitle={`Live real-time feed · Current Price: $${activeStockState.price.toFixed(2)} · Updated: ${activeStockState.lastUpdated ?? liveTime}`}
             close={() => setShowAdvancedModal(false)}
           >
             <div style={{ marginBottom: 20 }}>
