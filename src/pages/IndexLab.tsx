@@ -224,11 +224,6 @@ export function IndexLab({
                         <button
                           className="stock-button"
                           onClick={() => setSelected(h.ticker)}
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 10,
-                          }}
                         >
                           <StockLogo ticker={h.ticker} size={22} />
                           <span>
