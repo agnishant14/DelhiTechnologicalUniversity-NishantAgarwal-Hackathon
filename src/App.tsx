@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ExternalLink,
   Radio,
@@ -7,7 +7,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import type { Dashboard } from "../shared/types";
+import type { Dashboard, QuotesPayload } from "../shared/types";
 import type { StressDashboard } from "../shared/types";
 import { api, ago } from "./lib/api";
 import { Overview } from "./pages/Overview";
@@ -26,16 +26,12 @@ const PAGES = [
 ];
 
 const GLOBAL_INDICES = [
-  { name: "S&P 500", val: "4,213.80", delta: "+60.30 (+1.45%)", positive: true },
-  { name: "DOW JONES", val: "33,700.00", delta: "-61.00 (-0.18%)", positive: false },
+  { name: "S&P 500", val: "763.99", delta: "+1.36 (+0.18%)", positive: true },
+  { name: "NASDAQ 100", val: "742.03", delta: "+2.26 (+0.31%)", positive: true },
+  { name: "DOW JONES", val: "508.62", delta: "+0.07 (+0.01%)", positive: true },
   { name: "CRISIL COMPOSITE", val: "15,540.10", delta: "-18.39 (-0.12%)", positive: false },
-  { name: "NASDAQ 100", val: "15,288.40", delta: "+87.20 (+0.57%)", positive: true },
-  { name: "FTSE 100", val: "7,620.50", delta: "+1.08 (+0.01%)", positive: true },
-  { name: "NIKKEI 225", val: "33,240.10", delta: "+124.50 (+0.38%)", positive: true },
-  { name: "DAX 40", val: "18,225.40", delta: "+45.10 (+0.25%)", positive: true },
-  { name: "SHANGHAI COMP", val: "3,088.20", delta: "-12.40 (-0.40%)", positive: false },
-  { name: "BRENT CRUDE", val: "84.50", delta: "+1.20 (+1.44%)", positive: true },
-  { name: "GOLD (OUNCE)", val: "2,342.10", delta: "+18.60 (+0.80%)", positive: true },
+  { name: "GOLD (OUNCE)", val: "382.76", delta: "+1.92 (+0.50%)", positive: true },
+  { name: "BRENT CRUDE", val: "150.02", delta: "+4.36 (+2.99%)", positive: true },
   { name: "US 10Y YIELD", val: "4.28%", delta: "-0.04 (-0.92%)", positive: false },
 ];
 
@@ -46,6 +42,7 @@ export default function App() {
   const [page, setPage] = useState(fromPath);
   const [data, setData] = useState<Dashboard>();
   const [stress, setStress] = useState<StressDashboard>();
+  const [quotes, setQuotes] = useState<QuotesPayload>();
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [pending, setPending] = useState(false);
@@ -54,12 +51,14 @@ export default function App() {
   const [search, setSearch] = useState("");
 
   const reload = useCallback(async () => {
-    const [dashboard, book] = await Promise.all([
+    const [dashboard, book, quotesData] = await Promise.all([
       api<Dashboard>("dashboard"),
       api<StressDashboard>("stress"),
+      api<QuotesPayload>("quotes").catch(() => undefined),
     ]);
     setData(dashboard);
     setStress(book);
+    if (quotesData) setQuotes(quotesData);
   }, []);
 
   useEffect(() => {
@@ -121,6 +120,36 @@ export default function App() {
   const busy = pending || data?.busy || !data?.ready;
   const highImpactCount =
     data?.signals.filter((s) => s.impact >= 7).length || 2;
+
+  const tickerItems = useMemo(() => {
+    if (!quotes) return GLOBAL_INDICES;
+    const items = [...quotes.indices];
+    const keyTickers = [
+      "NVDA",
+      "AAPL",
+      "MSFT",
+      "META",
+      "AMZN",
+      "GOOGL",
+      "TSLA",
+      "JPM",
+      "XOM",
+      "LLY",
+    ];
+    for (const t of keyTickers) {
+      const q = quotes.stocks[t];
+      if (q) {
+        items.push({
+          name: q.ticker,
+          symbol: q.symbol,
+          val: `$${q.price.toFixed(2)}`,
+          delta: `${q.changeAbs >= 0 ? "+" : ""}${q.changeAbs.toFixed(2)} (${q.changePct >= 0 ? "+" : ""}${q.changePct.toFixed(2)}%)`,
+          positive: q.changePct >= 0,
+        });
+      }
+    }
+    return items;
+  }, [quotes]);
 
   return (
     <div className="app-shell">
@@ -199,11 +228,11 @@ export default function App() {
       {/* Global Market Indices Ticker Strip (Continuous Gliding Marquee Loop) */}
       <div
         className="investio-ticker-strip"
-        title="Hover to pause ticker glide"
+        title="Hover to pause ticker glide · Quotes powered by TradingView"
       >
         <div className="ticker-track">
           <div className="ticker-group">
-            {GLOBAL_INDICES.map((idx, i) => (
+            {tickerItems.map((idx, i) => (
               <div key={`idx-a-${idx.name}-${i}`} className="ticker-item">
                 <span className="ticker-name">{idx.name}</span>
                 <span className="ticker-val">{idx.val}</span>
@@ -216,7 +245,7 @@ export default function App() {
             ))}
           </div>
           <div className="ticker-group" aria-hidden="true">
-            {GLOBAL_INDICES.map((idx, i) => (
+            {tickerItems.map((idx, i) => (
               <div key={`idx-b-${idx.name}-${i}`} className="ticker-item">
                 <span className="ticker-name">{idx.name}</span>
                 <span className="ticker-val">{idx.val}</span>
@@ -336,6 +365,7 @@ export default function App() {
               <Overview
                 data={data}
                 stress={stress}
+                quotes={quotes}
                 navigate={navigate}
                 openSandbox={() => setSandbox(true)}
                 selectTicker={(value) => {
@@ -353,7 +383,7 @@ export default function App() {
                 busy={busy}
               />
             )}
-            {page === "index" && <IndexLab data={data} />}
+            {page === "index" && <IndexLab data={data} quotes={quotes} />}
             {page === "stress" && stress && (
               <StressStudio key={data.mode} data={stress} />
             )}
