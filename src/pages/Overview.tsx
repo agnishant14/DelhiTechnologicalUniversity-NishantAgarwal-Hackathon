@@ -715,7 +715,7 @@ export function Overview({
                     <span
                       style={{
                         fontSize: 11,
-                        fontWeight: 750,
+                        fontWeight: 700,
                         color: "var(--text-main)",
                         fontVariantNumeric: "tabular-nums",
                       }}
