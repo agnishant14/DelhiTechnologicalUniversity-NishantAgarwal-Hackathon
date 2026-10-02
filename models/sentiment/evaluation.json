@@ -1,0 +1,242 @@
+{
+  "version": "gorisk-sentiment-v2",
+  "labelOrder": [
+    "positive",
+    "negative",
+    "neutral"
+  ],
+  "selection": {
+    "run": "run-a",
+    "epoch": 4,
+    "criterion": "development metrics and fixed bankruptcy/company regression checks; test not used for selection"
+  },
+  "test": {
+    "count": 2367,
+    "labels": {
+      "negative": 345,
+      "positive": 471,
+      "neutral": 1551
+    },
+    "sources": {
+      "twitter-financial-news": 2367
+    },
+    "fingerprint": "63f3ecbbd2bb643216995a924c1d04ff222b1dfbed4f13acf03db6e5cc3106b8"
+  },
+  "preprocessing": "Remove URLs, normalize whitespace, add terminal punctuation; first 128 tokens for both models",
+  "labelRule": "highest-probability class; sentiment score remains P(positive) - P(negative)",
+  "baseline": {
+    "count": 2367,
+    "accuracy": 0.6915927334178285,
+    "macroF1": 0.6461546586125676,
+    "policyAccuracy": 0.6290663286861006,
+    "policyMacroF1": 0.6038288562867883,
+    "negativeRecall": 0.8289855072463768,
+    "negativeToNeutral": 44,
+    "nll": 0.7448552660141565,
+    "brier": 0.4393633854499139,
+    "ece10": 0.1297094460827014,
+    "confusionMatrix": [
+      [
+        286,
+        61,
+        124
+      ],
+      [
+        15,
+        286,
+        44
+      ],
+      [
+        197,
+        289,
+        1065
+      ]
+    ],
+    "perClass": {
+      "positive": {
+        "precision": 0.5742971887550201,
+        "recall": 0.6072186836518046,
+        "f1-score": 0.5902992776057792,
+        "support": 471.0
+      },
+      "negative": {
+        "precision": 0.449685534591195,
+        "recall": 0.8289855072463768,
+        "f1-score": 0.583078491335372,
+        "support": 345.0
+      },
+      "neutral": {
+        "precision": 0.8637469586374696,
+        "recall": 0.6866537717601547,
+        "f1-score": 0.7650862068965517,
+        "support": 1551.0
+      },
+      "accuracy": 0.6915927334178285,
+      "macro avg": {
+        "precision": 0.629243227327895,
+        "recall": 0.707619320886112,
+        "f1-score": 0.6461546586125676,
+        "support": 2367.0
+      },
+      "weighted avg": {
+        "precision": 0.7457993317212894,
+        "recall": 0.6915927334178285,
+        "f1-score": 0.7037776705363654,
+        "support": 2367.0
+      }
+    }
+  },
+  "fineTuned": {
+    "count": 2367,
+    "accuracy": 0.8369243768483312,
+    "macroF1": 0.7973094025486615,
+    "policyAccuracy": 0.748204478242501,
+    "policyMacroF1": 0.7198683180647966,
+    "negativeRecall": 0.8115942028985508,
+    "negativeToNeutral": 48,
+    "nll": 0.41813832323449573,
+    "brier": 0.23534842571592632,
+    "ece10": 0.020515259416686575,
+    "confusionMatrix": [
+      [
+        376,
+        22,
+        73
+      ],
+      [
+        17,
+        280,
+        48
+      ],
+      [
+        119,
+        107,
+        1325
+      ]
+    ],
+    "perClass": {
+      "positive": {
+        "precision": 0.734375,
+        "recall": 0.7983014861995754,
+        "f1-score": 0.7650050864699899,
+        "support": 471.0
+      },
+      "negative": {
+        "precision": 0.684596577017115,
+        "recall": 0.8115942028985508,
+        "f1-score": 0.7427055702917772,
+        "support": 345.0
+      },
+      "neutral": {
+        "precision": 0.9163208852005532,
+        "recall": 0.854287556415216,
+        "f1-score": 0.8842175508842175,
+        "support": 1551.0
+      },
+      "accuracy": 0.8369243768483312,
+      "macro avg": {
+        "precision": 0.7784308207392227,
+        "recall": 0.8213944151711141,
+        "f1-score": 0.7973094025486615,
+        "support": 2367.0
+      },
+      "weighted avg": {
+        "precision": 0.8463414182581169,
+        "recall": 0.8369243768483312,
+        "f1-score": 0.8398699784112589,
+        "support": 2367.0
+      }
+    }
+  },
+  "deployed": {
+    "count": 2367,
+    "accuracy": 0.8369243768483312,
+    "macroF1": 0.7973094025486615,
+    "policyAccuracy": 0.7486269539501479,
+    "policyMacroF1": 0.7201395124474542,
+    "negativeRecall": 0.8115942028985508,
+    "negativeToNeutral": 48,
+    "nll": 0.4180375430731278,
+    "brier": 0.23529327339572534,
+    "ece10": 0.02110368688246544,
+    "confusionMatrix": [
+      [
+        376,
+        22,
+        73
+      ],
+      [
+        17,
+        280,
+        48
+      ],
+      [
+        119,
+        107,
+        1325
+      ]
+    ],
+    "perClass": {
+      "positive": {
+        "precision": 0.734375,
+        "recall": 0.7983014861995754,
+        "f1-score": 0.7650050864699899,
+        "support": 471.0
+      },
+      "negative": {
+        "precision": 0.684596577017115,
+        "recall": 0.8115942028985508,
+        "f1-score": 0.7427055702917772,
+        "support": 345.0
+      },
+      "neutral": {
+        "precision": 0.9163208852005532,
+        "recall": 0.854287556415216,
+        "f1-score": 0.8842175508842175,
+        "support": 1551.0
+      },
+      "accuracy": 0.8369243768483312,
+      "macro avg": {
+        "precision": 0.7784308207392227,
+        "recall": 0.8213944151711141,
+        "f1-score": 0.7973094025486615,
+        "support": 2367.0
+      },
+      "weighted avg": {
+        "precision": 0.8463414182581169,
+        "recall": 0.8369243768483312,
+        "f1-score": 0.8398699784112589,
+        "support": 2367.0
+      }
+    }
+  },
+  "majorityAccuracy": 0.6552598225602028,
+  "pairedImprovement": {
+    "accuracyGain": 0.14533164343050275,
+    "bootstrap95": [
+      0.1271651880016899,
+      0.1634980988593156
+    ],
+    "unit": "near-duplicate group",
+    "resamples": 2000
+  },
+  "exportClassAgreement": 1.0,
+  "inference": {
+    "runtime": "ONNX Runtime CPU",
+    "batchSize": 1,
+    "testSeconds": 62.743,
+    "examplesPerSecond": 37.73
+  },
+  "limits": [
+    "Historical English financial posts, not a future-news or market-return benchmark",
+    "PhraseBank was used in base-model training and is excluded from independent evaluation",
+    "Near-duplicate filtering reduces but cannot prove absence of all related-story leakage",
+    "Policy-prefixed metrics describe the previous +/-0.15 label rule; deployed labels use argmax",
+    "Topic, event, severity and portfolio-loss accuracy are not measured here"
+  ],
+  "artifact": {
+    "sha256": "908ac567f2a2952e12e5e537519984a749473beec9f93f4c093e12b3436afdee",
+    "precision": "fp16",
+    "bytes": 219255692
+  }
+}

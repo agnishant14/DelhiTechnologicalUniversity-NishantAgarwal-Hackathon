@@ -1,5 +1,6 @@
 import argparse
 import gzip
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -38,6 +39,11 @@ def evaluate(args):
     if exported["selectedRun"] != args.run.name:
         raise ValueError("Exported model does not match the selected training run")
     settings["temperature"] = exported["temperature"]
+    weights = args.model / "onnx/model_fp16.onnx"
+    with weights.open("rb") as stream:
+        checksum = hashlib.file_digest(stream, "sha256").hexdigest()
+    if checksum != exported["onnxSha256"]:
+        raise ValueError("Model weights differ from the validated export")
     tokenizer = AutoTokenizer.from_pretrained(model_directory())
     corpus = Corpus(test, tokenizer, settings["maxLength"])
     labels = np.array([r["label"] for r in test])
@@ -50,12 +56,13 @@ def evaluate(args):
     del model
     if device == "mps":
         torch.mps.empty_cache()
-    runtime = session(args.model / "onnx/model_fp16.onnx")
+    runtime = session(weights)
     started = time.perf_counter()
     deployed = predict_onnx(runtime, corpus)
     elapsed = time.perf_counter() - started
     report = {
         "version": settings["version"], "labelOrder": LABELS,
+        "artifact": {"sha256": checksum, "precision": "fp16", "bytes": weights.stat().st_size},
         "selection": {"run": args.run.name, "epoch": settings["selectedEpoch"],
                       "criterion": "development metrics and fixed bankruptcy/company regression checks; test not used for selection"},
         "test": splits["splits"]["test"],
