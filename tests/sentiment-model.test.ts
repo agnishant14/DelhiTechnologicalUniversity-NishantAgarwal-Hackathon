@@ -9,6 +9,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { gzipSync } from "node:zlib";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ensureSentimentModel } from "../server/sentiment-model";
 
@@ -26,11 +27,11 @@ async function fixture() {
   await mkdir(assets);
   for (const name of [
     "config.json",
-    "tokenizer.json",
     "tokenizer_config.json",
     "special_tokens_map.json",
   ])
     await writeFile(path.join(assets, name), "{}");
+  await writeFile(path.join(assets, "tokenizer.json.gz"), gzipSync("{}"));
   const bytes = "verified model bytes";
   const artifact = {
     version: "test",

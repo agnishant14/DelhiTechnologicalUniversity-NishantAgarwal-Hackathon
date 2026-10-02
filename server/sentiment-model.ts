@@ -1,10 +1,19 @@
 import { createHash, randomUUID } from "node:crypto";
 import { createReadStream, createWriteStream } from "node:fs";
-import { copyFile, mkdir, rename, rm, stat } from "node:fs/promises";
+import {
+  copyFile,
+  mkdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import { Readable, Transform } from "node:stream";
 import type { ReadableStream } from "node:stream/web";
 import { pipeline } from "node:stream/promises";
+import { gunzipSync } from "node:zlib";
 
 export interface SentimentArtifact {
   version: string;
@@ -69,10 +78,13 @@ export async function ensureSentimentModel(
   }
   for (const name of [
     "config.json",
-    "tokenizer.json",
     "tokenizer_config.json",
     "special_tokens_map.json",
   ])
     await copyFile(path.join(assets, name), path.join(directory, name));
+  await writeFile(
+    path.join(directory, "tokenizer.json"),
+    gunzipSync(await readFile(path.join(assets, "tokenizer.json.gz"))),
+  );
   return directory;
 }
