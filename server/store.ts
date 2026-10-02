@@ -44,7 +44,7 @@ export class Store {
     this.db.exec("BEGIN");
     try {
       const statement = this.db.prepare(
-        "INSERT OR IGNORE INTO signals VALUES (?, ?, ?, ?)",
+        "INSERT INTO signals VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET body = excluded.body",
       );
       for (const s of signals)
         statement.run(s.id, s.mode, s.publishedAt, JSON.stringify(s));

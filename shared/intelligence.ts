@@ -33,6 +33,7 @@ export interface Asset {
   rateDv01: number;
 }
 export interface StressResult {
+  analysisVersion?: string;
   id: string;
   mode: Mode;
   timestamp: string;
@@ -46,7 +47,13 @@ export interface StressResult {
   after: number;
   pnl: number;
   pnlPct: number;
-  contributions: { asset: Asset; before: number; after: number; pnl: number; drivers: Shocks }[];
+  contributions: {
+    asset: Asset;
+    before: number;
+    after: number;
+    pnl: number;
+    drivers: Shocks;
+  }[];
 }
 export interface StressDashboard {
   assets: Asset[];

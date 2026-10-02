@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import {
+  ANALYSIS_VERSION,
   type Dashboard,
   type Document,
   type Mode,
@@ -94,7 +95,53 @@ export class RiskService {
       this.store.save([], undefined, {
         demoAnchor: String(Date.now() - 30 * 60_000),
       });
+    await this.refreshAnalysis();
     this.ready = true;
+  }
+  private async refreshAnalysis() {
+    if (this.engine.status !== "ready") return;
+    const version = `${ANALYSIS_VERSION}:${this.engine.info.model}`;
+    for (const mode of ["demo", "live"] as const) {
+      const saved = this.store.signals(mode);
+      if (saved.every((s) => s.analysisVersion === version)) continue;
+      const updated: Signal[] = [];
+      for (const old of saved.sort(
+        (a, b) => Date.parse(a.ingestedAt) - Date.parse(b.ingestedAt),
+      )) {
+        const {
+          text,
+          sourceKind,
+          sourceName,
+          sourceUrl,
+          publishedAt,
+          isSample,
+        } = old;
+        const signal = await this.engine.analyze(
+          { text, sourceKind, sourceName, sourceUrl, publishedAt, isSample },
+          mode,
+        );
+        updated.push({
+          ...annotateNovelty(signal, updated),
+          id: old.id,
+          ingestedAt: old.ingestedAt,
+        });
+      }
+      const previous =
+        this.store.history(mode).at(-1)?.weights ?? equalWeights();
+      const next = rebalance(updated, previous);
+      this.store.save(
+        updated,
+        next.turnover > 1e-6
+          ? {
+              ...next,
+              id: randomUUID(),
+              mode,
+              timestamp: new Date().toISOString(),
+              reason: `Recalculated with analysis ${version}`,
+            }
+          : undefined,
+      );
+    }
   }
   private async ingest(
     documents: Document[],
@@ -214,22 +261,19 @@ export class RiskService {
       const previous =
         this.store.history(this.mode).at(-1)?.weights ?? equalWeights();
       const current = this.store.signals(this.mode);
-      const signal = annotateNovelty(
-        await this.engine.analyze(
-          {
-            text,
-            sourceKind: "manual",
-            sourceName: "What-if sandbox",
-            publishedAt: new Date().toISOString(),
-            isSample: true,
-          },
-          this.mode,
-        ),
-        current,
+      const analyzed = await this.engine.analyze(
+        {
+          text,
+          sourceKind: "manual",
+          sourceName: "What-if sandbox",
+          publishedAt: new Date().toISOString(),
+          isSample: true,
+        },
+        this.mode,
       );
-      const combined = current.some((s) => s.id === signal.id)
-        ? current
-        : [...current, signal];
+      const otherSignals = current.filter((s) => s.id !== analyzed.id);
+      const signal = annotateNovelty(analyzed, otherSignals);
+      const combined = [...otherSignals, signal];
       const { weights, turnover } = rebalance(combined, previous);
       return {
         signal,

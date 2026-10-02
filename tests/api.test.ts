@@ -40,6 +40,88 @@ beforeEach(async () => {
 afterEach(() => store.close());
 
 describe("pipeline API", () => {
+  it("refreshes saved analysis on upgrade without losing inputs or replaying stress history", async () => {
+    const [old] = await service.analyze({
+      text: "apple goes bankrupt",
+      sourceKind: "manual",
+      sourceName: "Saved input",
+      publishedAt: new Date().toISOString(),
+    });
+    store.save([
+      {
+        ...old,
+        analysisVersion: undefined,
+        sentiment: 0,
+        sentimentLabel: "neutral",
+      },
+    ]);
+    const before = service.stress().history;
+    const engine = new RiskEngine(async () => [
+      { label: "positive", score: 0.02 },
+      { label: "negative", score: 0.73 },
+      { label: "neutral", score: 0.25 },
+    ]);
+    const restarted = new RiskService(engine, store);
+    await restarted.initialize();
+    const corrected = restarted
+      .dashboard()
+      .signals.find((s) => s.id === old.id)!;
+    expect(corrected).toMatchObject({
+      text: old.text,
+      sourceName: old.sourceName,
+      publishedAt: old.publishedAt,
+      ingestedAt: old.ingestedAt,
+      sentimentLabel: "negative",
+      sentiment: -0.71,
+    });
+    expect(restarted.stress().history).toEqual(before);
+    const spy = vi.spyOn(engine, "analyze");
+    await restarted.initialize();
+    expect(spy).not.toHaveBeenCalled();
+  });
+  it("uses fresh inference for an existing headline in preview without suppressing it as its own duplicate", async () => {
+    const [saved] = await service.analyze({
+      text: "Apple goes bankrupt after failing to repay its debts",
+      sourceKind: "manual",
+      sourceName: "Saved input",
+      publishedAt: new Date().toISOString(),
+    });
+    vi.spyOn(service.engine, "analyze").mockResolvedValueOnce({
+      ...saved,
+      sentiment: -0.9,
+      sentimentLabel: "negative",
+      companySentiments: [
+        {
+          ticker: "AAPL",
+          sentiment: -0.9,
+          text: saved.text,
+          scope: "shared headline",
+        },
+      ],
+    });
+    const preview = await service.preview(saved.text);
+    expect(preview.signal.duplicateOf).toBeUndefined();
+    expect(
+      preview.holdings.find((h) => h.ticker === "AAPL")!.sentiment,
+    ).toBeLessThan(0);
+    expect(store.signals("demo").find((s) => s.id === saved.id)).toEqual(saved);
+  });
+  it("does not create automatic stress tests for negated or speculative credit events", async () => {
+    await service.setMode("live");
+    for (const text of [
+      "Apple is not bankrupt",
+      "Apple denies bankruptcy rumors",
+      "Tesla may go bankrupt",
+    ]) {
+      await service.analyze({
+        text,
+        sourceKind: "manual",
+        sourceName: "Test",
+        publishedAt: new Date().toISOString(),
+      });
+    }
+    expect(service.stress().history).toHaveLength(0);
+  });
   it("seeds both source types and deduplicates without another rebalance", async () => {
     const before = service.dashboard();
     const analyze = vi.spyOn(service.engine, "analyze");
