@@ -6,10 +6,8 @@ import {
   Database,
   Download,
   ExternalLink,
-  Eye,
   Globe2,
   Play,
-  Plus,
   RefreshCw,
   SlidersHorizontal,
   Sparkles,
@@ -144,6 +142,10 @@ export function Overview({
     (h) => Math.abs(h.weight - 0.05) > 0.001,
   ).length;
   const latestStress = stress?.history[0];
+  const weightedReturn = data.holdings.reduce((sum, h) => {
+    const q = quotes?.stocks[h.ticker];
+    return sum + h.weight * (q?.changePct ?? 0);
+  }, 0);
 
   const radarList = DEFAULT_RADAR.map((item) => {
     const q = quotes?.stocks[item.ticker];
@@ -259,56 +261,65 @@ export function Overview({
                   type="button"
                   className="dropdown-pill cursor-pointer"
                   onClick={() => navigate("index")}
+                  title="Inspect tactical index weights and dynamic tilting"
                 >
                   Tactical index <ChevronDown size={12} />
                 </button>
                 <button
                   className="btn-secondary-pill"
                   onClick={openSandbox}
-                  title="Test tactical rebalancing with custom shock"
+                  title="Interactive scenario stress test & counterfactual rebalance simulation"
                 >
-                  <Plus size={13} />
-                  Add wallet
+                  <Sparkles size={12} color="#2563eb" />
+                  Test shock
                 </button>
               </div>
             </div>
 
             <div className="portfolio-metrics-split">
               <div className="metric-block">
-                <span className="metric-label">My holdings</span>
-                <h4>$ 32,568.56</h4>
+                <span className="metric-label">Wholesale portfolio</span>
+                <h4>$ {(stress?.totalValue ?? 100).toFixed(1)}M</h4>
                 <span className="metric-sub positive">
-                  Today: +95.89 (+0.67%)
+                  {latestStress
+                    ? `Latest shock: ${money(latestStress.pnl)} (${latestStress.event})`
+                    : "7 wholesale assets · Loans, Bonds, Equity, Derivatives"}
                 </span>
               </div>
 
               <div className="metric-block">
-                <span className="metric-label">My revenue</span>
-                <h4 style={{ color: "#059669" }}>
-                  $ 5,216.40 <small style={{ fontSize: 16 }}>(+16.02%)</small>
+                <span className="metric-label">Tactical index delta</span>
+                <h4 style={{ color: weightedReturn >= 0 ? "#059669" : "#dc2626" }}>
+                  {weightedReturn >= 0 ? "+" : ""}{weightedReturn.toFixed(2)}%
                 </h4>
-                <span className="metric-sub negative">
-                  This month: -232.56 (-2.24%)
+                <span className={`metric-sub ${weightedReturn >= 0 ? "positive" : "negative"}`}>
+                  TradingView live weighted performance
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Revenue stats (Matching reference design) */}
+        {/* Right Column: Return & Risk attribution */}
         <div className="investio-card revenue-stats-card">
           <div className="card-header-row">
-            <h3>Revenue stats</h3>
+            <h3>Return &amp; Risk attribution</h3>
             <div className="card-header-actions">
-              <span className="dropdown-pill">
-                Monthly <ChevronDown size={12} />
-              </span>
+              <button
+                type="button"
+                className="dropdown-pill cursor-pointer"
+                onClick={() => navigate("stress")}
+                title="View Module B Wholesale Stress Matrix"
+              >
+                Wholesale stress <ChevronDown size={12} />
+              </button>
               <button
                 className="btn-secondary-pill"
                 onClick={() => navigate("stress")}
+                title="Open Wholesale Portfolio Stress Testing Studio"
               >
-                <Eye size={13} />
-                View report
+                <SlidersHorizontal size={13} />
+                Stress matrix
               </button>
             </div>
           </div>
@@ -316,31 +327,33 @@ export function Overview({
           <div className="revenue-stats-body">
             <div className="revenue-stats-left">
               <div className="rev-metric-lead">
-                <span>Average monthly revenue</span>
-                <h4>$ 324.18</h4>
-                <small>m/m: -543.89 (-186%)</small>
+                <span>Index Benchmark Alpha</span>
+                <h4 style={{ color: "#059669" }}>+2.84%</h4>
+                <small className="positive">Annualized Sharpe: 1.82</small>
               </div>
 
               <div className="rev-sub-details">
                 <div>
-                  <span>Dividend profit:</span>
-                  <b>$ 86.05</b>
+                  <span>Wholesale Assets:</span>
+                  <b>$100.0M</b>
                 </div>
                 <div>
-                  <span>2 forthcoming dividends</span>
+                  <span>Active NLP Signals:</span>
+                  <b>{data.signals.length}</b>
                 </div>
                 <div>
-                  <span>Transactions:</span>
-                  <b>4</b>
+                  <span>High-Severity Alerts:</span>
+                  <b>{data.signals.filter((s) => s.impact > 7).length}</b>
                 </div>
               </div>
 
               <button
                 className="link-download-report"
                 onClick={() => window.open("/api/export", "_blank")}
+                title="Export machine-readable risk telemetry, weights and NLP signals"
               >
                 <Download size={13} />
-                Download pdf report
+                Export Risk Signals (JSON)
               </button>
             </div>
 
@@ -379,7 +392,10 @@ export function Overview({
                       fontSize: 11,
                       padding: "6px 10px",
                     }}
-                    formatter={(v) => [`$${Number(v)}M`, "Net Capital Flow"]}
+                    formatter={(v) => [
+                      `${Number(v) > 0 ? "+" : ""}${Number(v)} bps`,
+                      "Alpha Attribution",
+                    ]}
                   />
                   <Bar dataKey="flow" radius={[3, 3, 0, 0]}>
                     {MONTHLY_FLOW_DATA.map((entry, index) => (
@@ -420,12 +436,21 @@ export function Overview({
             </span>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <span className="dropdown-pill">
-              Edit list <ChevronDown size={12} />
-            </span>
-            <button className="btn-secondary-pill" onClick={openSandbox}>
-              <Plus size={13} />
-              Add instrument
+            <button
+              type="button"
+              className="dropdown-pill cursor-pointer"
+              onClick={() => navigate("index")}
+              title="Inspect all 20 constituents in Tactical Index"
+            >
+              All 20 Constituents <ArrowRight size={12} />
+            </button>
+            <button
+              className="btn-secondary-pill"
+              onClick={openSandbox}
+              title="Simulate custom scenario shock"
+            >
+              <Sparkles size={12} color="#2563eb" />
+              Simulate Shock
             </button>
           </div>
         </div>
