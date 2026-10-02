@@ -17,11 +17,16 @@ export const equalWeights = () =>
   Object.fromEntries(
     STOCKS.map((s) => [s.ticker, 1 / STOCKS.length]),
   ) as Record<Ticker, number>;
+export function validWeights(weights: Record<Ticker, number>) {
+  return STOCKS.every(({ ticker }) => Number.isFinite(weights[ticker]) && weights[ticker] >= POLICY.minWeight - 1e-9 && weights[ticker] <= POLICY.maxWeight + 1e-9)
+    && Math.abs(STOCKS.reduce((sum, s) => sum + weights[s.ticker], 0) - 1) < 1e-8;
+}
 export function aggregate(signals: Signal[], now = Date.now()) {
   return Object.fromEntries(
     STOCKS.map((stock) => {
       const relevant = signals.filter(
         (s) =>
+          !s.duplicateOf &&
           s.tickers.includes(stock.ticker) &&
           now - Date.parse(s.publishedAt) <= POLICY.lookbackHours * 3600000 &&
           Date.parse(s.publishedAt) <= now,
@@ -33,7 +38,7 @@ export function aggregate(signals: Signal[], now = Date.now()) {
         const weight =
           2 ** (-age / POLICY.halfLifeHours) *
           (s.sourceKind === "social" ? 0.6 : 1);
-        numerator += s.sentiment * weight;
+        numerator += (s.companySentiments?.find((c) => c.ticker === stock.ticker)?.sentiment ?? s.sentiment) * weight;
         denominator += weight;
       });
       return [
@@ -52,6 +57,7 @@ export function rebalance(
   previous = equalWeights(),
   now = Date.now(),
 ) {
+  if (!validWeights(previous)) previous = equalWeights();
   const scores = aggregate(signals, now);
   const baseWeight = 1 / STOCKS.length;
   const raw = STOCKS.map(
@@ -104,6 +110,8 @@ export function holdings(
   current = equalWeights(),
   previous = equalWeights(),
 ): Holding[] {
+  if (!validWeights(current)) current = equalWeights();
+  if (!validWeights(previous)) previous = equalWeights();
   const scores = aggregate(signals);
   const baseWeight = 1 / STOCKS.length;
   return STOCKS.map(({ ticker, name, sector }) => ({
