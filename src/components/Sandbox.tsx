@@ -52,17 +52,18 @@ export function Sandbox({ close }: { close: () => void }) {
       }}
     >
       <div className="sandbox-content">
-        <div className="section-title">
+        <div className="dialog-head">
           <div>
             <span className="eyebrow">PREVIEW · NO SAVED CHANGES</span>
             <h2>Test a headline</h2>
           </div>
           <button
-            className="icon-button"
+            className="dialog-close-btn"
             aria-label="Close sandbox"
             onClick={close}
+            type="button"
           >
-            <X size={21} />
+            <X size={16} />
           </button>
         </div>
         <p className="muted">
