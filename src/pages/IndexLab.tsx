@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { ArrowRight } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -283,8 +282,13 @@ export function IndexLab({
       </section>
       <section className="panel">
         <div className="section-title">
-          <h2>{selected}: behind the allocation</h2>
-          <ArrowRight size={18} />
+          <div>
+            <span className="eyebrow">COMPANY SURVEILLANCE EVIDENCE</span>
+            <h2>{selected}: behind the allocation</h2>
+          </div>
+          <span className="tag">
+            {evidence.length} signal{evidence.length === 1 ? "" : "s"} in last 24h
+          </span>
         </div>
         {evidence.length ? (
           evidence.slice(0, 5).map((s) => <SignalCard key={s.id} signal={s} />)
