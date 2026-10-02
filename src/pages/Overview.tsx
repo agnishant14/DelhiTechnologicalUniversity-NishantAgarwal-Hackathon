@@ -1,15 +1,7 @@
-import {
-  ArrowRight,
-  ArrowUpRight,
-  AudioLines,
-  BrainCircuit,
-  Globe2,
-  Layers3,
-  Sparkles,
-} from "lucide-react";
+import { ArrowRight, Globe2, SlidersHorizontal } from "lucide-react";
 import type { Dashboard, Ticker } from "../../shared/types";
 import type { StressDashboard } from "../../shared/types";
-import { money, signed, tone } from "../lib/api";
+import { money, signed, sentimentTone } from "../lib/api";
 import { SignalCard } from "../components/SignalCard";
 
 export function Overview({
@@ -35,88 +27,19 @@ export function Overview({
   const latestStress = stress?.history[0];
   return (
     <>
-      <section className="hero">
-        <div className="hero-copy">
-          <span className="eyebrow">
-            <i className="status-dot" /> YOUR NEWS-TO-RISK WORKSPACE
-          </span>
-          <h1>
-            Read the news.
-            <br />
-            <span>See the ripple.</span>
-          </h1>
+      <div className="page-heading">
+        <div>
+          <span className="eyebrow">NEWS → SIGNALS → PORTFOLIO</span>
+          <h1>Risk overview</h1>
           <p>
-            Turn market noise into a clearer picture. Follow the evidence,
-            explore your index, and put your portfolio to the test.
+            Follow financial news and explore its effect on your index and
+            portfolio.
           </p>
-          <button className="button dark" onClick={openSandbox}>
-            <Sparkles size={17} /> Try a what-if <ArrowUpRight size={17} />
-          </button>
-          <span className="hero-caption">
-            One headline. Two ways to understand the impact.
-          </span>
         </div>
-        <div
-          className="pipeline-art"
-          aria-label="News and community posts flow through two language models to an index and a stress test"
-        >
-          <svg viewBox="0 0 510 300" aria-hidden="true">
-            <defs>
-              <pattern
-                id="dots"
-                x="0"
-                y="0"
-                width="18"
-                height="18"
-                patternUnits="userSpaceOnUse"
-              >
-                <circle cx="1" cy="1" r="1" fill="#d8dbcc" />
-              </pattern>
-            </defs>
-            <rect width="510" height="300" fill="url(#dots)" />
-            <path
-              d="M105 92 C170 92 163 150 240 150 M105 213 C170 213 163 150 240 150 M282 150 C347 150 335 92 402 92 M282 150 C347 150 335 213 402 213"
-              fill="none"
-              stroke="#b4bca4"
-              strokeWidth="2"
-              strokeDasharray="4 5"
-              className="flow-path"
-            />
-            <circle cx="257" cy="150" r="79" fill="none" stroke="#dbe2c2" />
-            <circle cx="257" cy="150" r="63" fill="none" stroke="#cad6aa" />
-          </svg>
-          <div className="pipeline-node source-one">
-            <Globe2 size={20} />
-            <span>News feeds</span>
-          </div>
-          <div className="pipeline-node source-two">
-            <AudioLines size={20} />
-            <span>Community</span>
-          </div>
-          <div className="pipeline-core">
-            <BrainCircuit size={32} />
-            <b>GoRisk</b>
-            <small>2 NLP models</small>
-          </div>
-          <button
-            className="pipeline-node target-one"
-            onClick={() => navigate("index")}
-          >
-            <Layers3 size={20} />
-            <span>Index lab</span>
-            <ArrowUpRight size={13} />
-          </button>
-          <button
-            className="pipeline-node target-two"
-            onClick={() => navigate("stress")}
-          >
-            <Sparkles size={20} />
-            <span>Stress studio</span>
-            <ArrowUpRight size={13} />
-          </button>
-          <span className="art-caption">COLLECT → UNDERSTAND → EXPLORE</span>
-        </div>
-      </section>
+        <button className="button dark" onClick={openSandbox}>
+          <SlidersHorizontal size={16} /> Try a what-if
+        </button>
+      </div>
       <section className="metrics-grid">
         <div className="metric">
           <span>Fresh, distinct signals</span>
@@ -159,8 +82,8 @@ export function Overview({
         <section className="panel">
           <div className="section-title">
             <div>
-              <span className="eyebrow">THE SIGNAL, BEHIND THE HEADLINE</span>
-              <h2>On the radar</h2>
+              <span className="eyebrow">LATEST INTELLIGENCE</span>
+              <h2>Recent signals</h2>
             </div>
             <button className="text-button" onClick={() => navigate("signals")}>
               All signals <ArrowRight size={16} />
@@ -213,24 +136,13 @@ export function Overview({
               stay visible.
             </p>
           </section>
-          <section className="panel mint">
-            <span className="eyebrow">BUILT TO BE QUESTIONED</span>
-            <h2>A model you can inspect.</h2>
-            <p>
-              See the validation results, competing topics, and the words behind
-              each topic prediction.
-            </p>
-            <button className="text-button" onClick={() => navigate("model")}>
-              Open the model lab <ArrowUpRight size={16} />
-            </button>
-          </section>
         </div>
       </div>
       <section className="panel heatmap-panel">
         <div className="section-title">
           <div>
             <span className="eyebrow">20 COMPANIES · ONE MOCK INDEX</span>
-            <h2>The sentiment landscape</h2>
+            <h2>Company sentiment</h2>
           </div>
           <span className="small muted">
             Select a company to follow its evidence
@@ -240,7 +152,7 @@ export function Overview({
           {data.holdings.map((h) => (
             <button
               key={h.ticker}
-              className={`heat-cell ${tone(h.sentiment)}`}
+              className={`heat-cell ${sentimentTone(h.sentiment)}`}
               onClick={() => selectTicker(h.ticker)}
               title={`${h.name}: ${h.signalCount} eligible signals`}
             >

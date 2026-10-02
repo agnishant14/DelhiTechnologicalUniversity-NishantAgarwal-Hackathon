@@ -4,7 +4,7 @@ import {
   ExternalLink,
   Radio,
   RefreshCw,
-  Sparkles,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { Dashboard } from "../shared/types";
 import type { StressDashboard } from "../shared/types";
@@ -139,7 +139,6 @@ export default function App() {
       <main>
         <div className="workspace-bar">
           <div className="row">
-            <span className="workspace-label">WORKSPACE</span>
             <div className="mode-toggle" aria-label="Data workspace">
               {["live", "demo"].map((mode) => (
                 <button
@@ -185,11 +184,11 @@ export default function App() {
                   : "Fetch news"}
             </button>
             <button
-              className="sandbox-trigger"
+              className="button small-button dark"
               aria-label="Open what-if sandbox"
               onClick={() => setSandbox(true)}
             >
-              <Sparkles size={18} />
+              <SlidersHorizontal size={15} /> What-if
             </button>
           </div>
         </div>
@@ -261,7 +260,7 @@ export default function App() {
         <footer>
           <div>
             <b>GoRisk.</b>
-            <span>A clearer view of financial risk.</span>
+            <span>News & portfolio intelligence</span>
           </div>
           <span>
             Hackathon prototype · Synthetic portfolios · No trade execution
