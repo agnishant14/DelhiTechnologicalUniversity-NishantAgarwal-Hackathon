@@ -4,6 +4,9 @@ import path from "node:path";
 import { z } from "zod";
 import { RiskService, ServiceError } from "./service";
 import { documentSchema } from "./validation";
+import metrics from "../models/metrics.json";
+import { EVENTS } from "../shared/types";
+import { runStress } from "./stress";
 import financialDatasetRaw from "../data/financial_dataset.json";
 import type { DatasetItem, DatasetQueryResponse } from "../shared/types";
 import {
@@ -46,6 +49,19 @@ export function createApp(service: RiskService) {
   );
   app.get("/api/dashboard", (_req, res) => res.json(service.dashboard()));
   app.get("/api/signals", (_req, res) => res.json(service.dashboard().signals));
+  app.get("/api/model", (_req, res) => res.json(metrics));
+  app.get("/api/stress", (_req, res) => res.json(service.stress()));
+  app.post("/api/stress/simulate", (req, res) => {
+    const input = z.object({
+      event: z.enum(EVENTS), impact: z.number().int().min(1).max(10).default(10),
+      shocks: z.object({ equityPct: z.number().min(-60).max(40), ratesBps: z.number().min(-500).max(500), creditBps: z.number().min(-200).max(1000), fxPct: z.number().min(-40).max(40) }).optional(),
+    }).parse(req.body);
+    res.json(runStress(input.event, input.impact, service.mode, input.shocks));
+  });
+  app.post("/api/preview", async (req, res) => {
+    const { text } = z.object({ text: z.string().trim().min(10).max(6000) }).parse(req.body);
+    res.json(await service.preview(text));
+  });
   app.get("/api/market-flow", (_req, res) => res.json(service.marketFlow()));
   app.get("/api/credit-ratings", (_req, res) => {
     const signals = service.dashboard().signals;
