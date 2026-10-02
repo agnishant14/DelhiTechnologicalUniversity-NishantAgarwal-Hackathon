@@ -34,7 +34,8 @@ export function SignalCard({
           className={`impact ${signal.impact > 7 ? "high" : ""}`}
           aria-label={`Impact ${signal.impact} out of 10`}
         >
-          {signal.impact}
+          <span className="impact-label">Impact</span>
+          <b>{signal.impact}</b>
           <small>/10</small>
         </span>
       </div>
