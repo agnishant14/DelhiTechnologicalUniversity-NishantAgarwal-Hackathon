@@ -40,6 +40,21 @@ beforeEach(async () => {
 afterEach(() => store.close());
 
 describe("pipeline API", () => {
+  it("exposes sentiment evaluation separately from topic metrics", async () => {
+    const app = createApp(service);
+    const sentiment = await request(app)
+      .get("/api/model/sentiment")
+      .expect(200);
+    expect(sentiment.body.manifest.version).toBe("gorisk-sentiment-v2");
+    expect(sentiment.body.metrics.test.count).toBe(2367);
+    expect(sentiment.body.metrics.labelOrder).toEqual([
+      "positive",
+      "negative",
+      "neutral",
+    ]);
+    const topic = await request(app).get("/api/model").expect(200);
+    expect(topic.body).not.toHaveProperty("manifest");
+  });
   it("refreshes saved analysis on upgrade without losing inputs or replaying stress history", async () => {
     const [old] = await service.analyze({
       text: "apple goes bankrupt",

@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
 import path from "node:path";
 import { predictTopic } from "./topic";
+import {
+  ensureSentimentModel,
+  type SentimentArtifact,
+} from "./sentiment-model";
+import artifact from "../models/sentiment/manifest.json";
 import type { CompanySentiment, TopicPrediction } from "../shared/types";
 import {
   ANALYSIS_VERSION,
@@ -13,7 +17,7 @@ import {
   type Ticker,
 } from "../shared/types";
 
-export const MODEL_REVISION = "8f269abebfdd9009d7d9b5e96af7e5c6bfe50b20";
+const sentimentModel = artifact as SentimentArtifact;
 const round = (n: number) => Math.round(n * 1000) / 1000;
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -297,7 +301,7 @@ export class RiskEngine {
   status: "loading" | "ready" | "fallback" = "loading";
   error?: string;
   private infer?: Inference;
-  private modelVersion = `finbert-${MODEL_REVISION}-argmax-v1`;
+  private modelVersion = `${sentimentModel.version}:${sentimentModel.sha256.slice(0, 12)}`;
   constructor(inference?: Inference) {
     if (inference) {
       this.infer = inference;
@@ -329,20 +333,17 @@ export class RiskEngine {
     try {
       const { pipeline, env } = await import("@huggingface/transformers");
       env.cacheDir = path.resolve(".cache/models");
-      const local = path.resolve(".cache/finbert");
-      const model = existsSync(path.join(local, "onnx/model_quantized.onnx"))
-        ? local
-        : "Xenova/finbert";
+      const model = await ensureSentimentModel(sentimentModel);
       const classifier = await pipeline("text-classification", model, {
-        dtype: "q8",
+        dtype: sentimentModel.dtype,
         device: "cpu",
-        revision: MODEL_REVISION,
+        local_files_only: true,
       });
       this.infer = async (text) => {
         const result = await classifier(text, {
           top_k: null,
           truncation: true,
-          max_length: 512,
+          max_length: sentimentModel.maxLength,
         });
         return result.flat() as { label: string; score: number }[];
       };
@@ -452,7 +453,7 @@ export class RiskEngine {
       evidence: [
         ...classification.evidence,
         model === "FinBERT"
-          ? "Label = highest-probability class. Sentiment = P(positive) − P(negative), using the first 512 tokens."
+          ? `Fine-tuned FinBERT: ${sentimentModel.version}. Label = highest-probability class. Sentiment = P(positive) − P(negative), using the first ${sentimentModel.maxLength} tokens.`
           : "Sentiment uses a small negation-aware word lexicon; confidence is not calibrated.",
         ...(model === "FinBERT" && modelInput(text) !== text
           ? [

@@ -5,6 +5,8 @@ import { z } from "zod";
 import { RiskService, ServiceError } from "./service";
 import { documentSchema } from "./validation";
 import metrics from "../models/metrics.json";
+import sentimentMetrics from "../models/sentiment/evaluation.json";
+import sentimentManifest from "../models/sentiment/manifest.json";
 import { EVENTS } from "../shared/types";
 import { runStress } from "./stress";
 import { fetchTradingViewQuotes } from "./tradingview";
@@ -45,6 +47,9 @@ export function createApp(service: RiskService) {
   app.get("/api/dashboard", (_req, res) => res.json(service.dashboard()));
   app.get("/api/signals", (_req, res) => res.json(service.dashboard().signals));
   app.get("/api/model", (_req, res) => res.json(metrics));
+  app.get("/api/model/sentiment", (_req, res) =>
+    res.json({ manifest: sentimentManifest, metrics: sentimentMetrics }),
+  );
   app.get("/api/stress", (_req, res) => res.json(service.stress()));
   app.post("/api/stress/simulate", (req, res) => {
     const input = z
@@ -70,14 +75,16 @@ export function createApp(service: RiskService) {
     res.json(await service.preview(text));
   });
   app.get("/api/export", (_req, res) =>
-    res
-      .attachment(`gorisk-${service.mode}.json`)
-      .json({
-        exportedAt: new Date().toISOString(),
-        ...service.dashboard(),
-        stress: service.stress(),
-        topicModel: metrics,
-      }),
+    res.attachment(`gorisk-${service.mode}.json`).json({
+      exportedAt: new Date().toISOString(),
+      ...service.dashboard(),
+      stress: service.stress(),
+      topicModel: metrics,
+      sentimentModel: {
+        manifest: sentimentManifest,
+        metrics: sentimentMetrics,
+      },
+    }),
   );
   app.post("/api/analyze", async (req, res) => {
     const doc = documentSchema.parse(req.body),

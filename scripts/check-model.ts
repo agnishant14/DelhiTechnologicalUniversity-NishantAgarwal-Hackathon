@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { RiskEngine } from "../server/engine";
+import parity from "../models/sentiment/parity.json";
 
 const engine = new RiskEngine();
 await engine.initialize();
@@ -73,4 +74,21 @@ assert.ok(
 );
 console.log(
   `${cases.length + 5} model regression checks passed. These examples are not an accuracy benchmark.`,
+);
+for (const item of parity) {
+  const signal = await engine.analyze({
+    text: item.text,
+    sourceKind: "manual",
+    sourceName: "Inference parity",
+    publishedAt: new Date().toISOString(),
+  });
+  for (const label of ["positive", "negative", "neutral"] as const)
+    assert.ok(
+      Math.abs(signal.probabilities![label] - item.probabilities[label]) <
+        0.005,
+      `Python/JavaScript probability mismatch for ${label}: ${item.text}`,
+    );
+}
+console.log(
+  `${parity.length} Python/JavaScript inference parity cases passed.`,
 );
