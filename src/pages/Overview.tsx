@@ -29,7 +29,7 @@ import {
 } from "recharts";
 import type { Dashboard, QuotesPayload, Ticker } from "../../shared/types";
 import type { StressDashboard } from "../../shared/types";
-import { money, signed, sentimentTone } from "../lib/api";
+import { money, signed } from "../lib/api";
 import { SignalCard } from "../components/SignalCard";
 import { StockLogo } from "../StockLogo";
 
@@ -439,7 +439,15 @@ export function Overview({
                 <div className="radar-card-header">
                   <div className="radar-company-info">
                     <StockLogo ticker={item.ticker} size={28} />
-                    <div className="radar-company-titles">
+                    <div
+                      className="radar-company-titles"
+                      onClick={() => {
+                        selectTicker(item.ticker);
+                        navigate("index");
+                      }}
+                      style={{ cursor: "pointer" }}
+                      title={`Inspect ${item.ticker} in Tactical Index`}
+                    >
                       <b>
                         {item.ticker} ({item.name.split(" ")[0]})
                       </b>
@@ -680,91 +688,6 @@ export function Overview({
           </section>
         </div>
       </div>
-
-      {/* 20 Constituent Sentiment Heatmap */}
-      <section className="panel heatmap-panel">
-        <div className="section-title">
-          <div>
-            <span className="eyebrow">20 S&amp;P CONSTITUENTS · MOCK INDEX</span>
-            <h2>Company sentiment &amp; Market prices</h2>
-          </div>
-          <span className="small muted">
-            Real-time TradingView quotes and AI surveillance sentiment
-          </span>
-        </div>
-        <div className="stock-heatmap">
-          {data.holdings.map((h) => {
-            const q = quotes?.stocks[h.ticker];
-            return (
-              <button
-                key={h.ticker}
-                className={`heat-cell ${sentimentTone(h.sentiment)}`}
-                onClick={() => {
-                  selectTicker(h.ticker);
-                  navigate("index");
-                }}
-                title={`${h.name}: ${h.signalCount} signals${q ? ` · $${q.price.toFixed(2)} (${q.changePct >= 0 ? "+" : ""}${q.changePct}%)` : ""}`}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "baseline",
-                  }}
-                >
-                  <b>{h.ticker}</b>
-                  {q && (
-                    <span
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: "var(--text-main)",
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      ${q.price.toFixed(2)}
-                    </span>
-                  )}
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    margin: "2px 0 6px",
-                  }}
-                >
-                  <span style={{ margin: 0, fontSize: 10.5 }}>
-                    {h.signalCount ? signed(h.sentiment) : "No signal"}
-                  </span>
-                  {q && (
-                    <span
-                      style={{
-                        margin: 0,
-                        fontSize: 10,
-                        fontWeight: 600,
-                        color:
-                          q.changePct >= 0 ? "var(--green)" : "var(--red)",
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      {q.changePct >= 0 ? "+" : ""}
-                      {q.changePct}%
-                    </span>
-                  )}
-                </div>
-                <div className="heat-bar">
-                  <i
-                    style={{
-                      width: `${Math.max(3, Math.abs(h.sentiment) * 100)}%`,
-                    }}
-                  />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </section>
     </>
   );
 }
