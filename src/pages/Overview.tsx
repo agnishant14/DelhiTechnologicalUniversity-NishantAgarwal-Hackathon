@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   ArrowRight,
   ChevronDown,
+  Code2,
   Database,
   Download,
   Eye,
@@ -150,9 +151,8 @@ export function Overview({
     <>
       {/* Top Grid: Greeting & Current Portfolio on Left, Revenue & Flow Stats on Right */}
       <div className="investio-top-grid">
-        <div className="left-stack">
-          {/* Greeting Card */}
-          <div className="investio-card greeting-card">
+        <div className="investio-card greeting-card">
+          <div className="greeting-head-row">
             <div className="greeting-card-info">
               <div className="greeting-badge-row">
                 <span className="live-status-dot" />
@@ -168,55 +168,64 @@ export function Overview({
               </p>
             </div>
 
-            <div className="greeting-actions-grid">
-              <button
-                className="greeting-action-btn primary"
-                onClick={onRunEvent}
-                disabled={busy}
-                title={
-                  data.mode === "demo"
-                    ? "Replay next event scenario"
-                    : "Fetch live financial feeds"
-                }
-              >
-                <Play size={13} />
-                <span>
-                  {data.mode === "demo" ? "Run Next Event" : "Sync Feeds"}
-                </span>
-              </button>
-
-              <button
-                className="greeting-action-btn"
-                onClick={onSwitchMode}
-                disabled={busy}
-                title="Toggle between Live Feeds and Demo Replay"
-              >
-                <RefreshCw size={13} />
-                <span>{data.mode === "live" ? "Demo Mode" : "Live Feeds"}</span>
-              </button>
-
-              <button
-                className="greeting-action-btn dataset"
-                onClick={() => navigate("signals")}
-                title="Explore Hugging Face & Kaggle benchmark records"
-              >
-                <Database size={13} />
-                <span>Dataset (920+)</span>
-              </button>
-
-              <button
-                className="greeting-action-btn sandbox"
-                onClick={openSandbox}
-                title="Interactive counterfactual simulation with Explainable AI token attribution"
-              >
-                <Sparkles size={13} />
-                <span>What-If (XAI)</span>
-              </button>
-            </div>
+            <button
+              className="greeting-pill-action"
+              onClick={onRunEvent}
+              disabled={busy}
+              title="Sync live financial feeds or replay next scenario"
+            >
+              <Code2 size={13} color="#2563eb" />
+              <span>{data.mode === "demo" ? "Run Next Event" : "Synch Live Feeds"}</span>
+            </button>
           </div>
 
-          {/* Current Portfolio Card */}
-          <div className="investio-card current-portfolio-card">
+          <div className="greeting-actions-row">
+            <button
+              className="greeting-action-btn primary"
+              onClick={onRunEvent}
+              disabled={busy}
+              title={
+                data.mode === "demo"
+                  ? "Replay next event scenario"
+                  : "Fetch live financial feeds"
+              }
+            >
+              <Play size={13} />
+              <span>
+                {data.mode === "demo" ? "Run Next Event" : "Sync Feeds"}
+              </span>
+            </button>
+
+            <button
+              className="greeting-action-btn"
+              onClick={onSwitchMode}
+              disabled={busy}
+              title="Toggle between Live Feeds and Demo Replay"
+            >
+              <RefreshCw size={13} />
+              <span>{data.mode === "live" ? "Demo Mode" : "Live Feeds"}</span>
+            </button>
+
+            <button
+              className="greeting-action-btn dataset"
+              onClick={() => navigate("signals")}
+              title="Explore Hugging Face & Kaggle benchmark records"
+            >
+              <Database size={13} />
+              <span>Dataset (920+)</span>
+            </button>
+
+            <button
+              className="greeting-action-btn sandbox"
+              onClick={openSandbox}
+              title="Interactive counterfactual simulation with Explainable AI token attribution"
+            >
+              <Sparkles size={13} />
+              <span>What-If (XAI)</span>
+            </button>
+          </div>
+
+          <div className="current-portfolio-inner">
             <div className="card-header-row">
               <h3>Current portfolio</h3>
               <div className="card-header-actions">
