@@ -2354,6 +2354,29 @@ tr.selected-row td {
   background: #94a3b8;
 }
 
+/* Compose Form (Signals Page) */
+.compose {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compose label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: -4px;
+}
+
+.show-more {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--blue);
+}
+
 /* Responsive Media Queries */
 @media (max-width: 1100px) {
   .investio-top-grid {
