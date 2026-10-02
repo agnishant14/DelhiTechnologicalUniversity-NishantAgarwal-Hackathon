@@ -32,71 +32,144 @@ async function request(url: string) {
   if (text.length > 2_000_000) throw new Error("Feed exceeds size limit");
   return text;
 }
-export const sources: Source[] = [
-  {
-    name: "Google News RSS",
-    kind: "news",
-    fetch: async () => {
-      const query =
-        "(Apple OR Microsoft OR Nvidia OR Tesla OR Amazon OR JPMorgan OR Alphabet OR Meta OR Exxon OR Visa OR Walmart OR Mastercard OR UnitedHealth OR Broadcom OR Costco OR inflation OR sanctions OR bankruptcy) (stock OR earnings OR market OR economy) when:1d";
-      const xml = await request(
-        `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`,
-      );
-      const feed = await new Parser().parseString(xml);
-      return feed.items.slice(0, 20).flatMap((item) => {
-        const publishedAt = validDate(item.isoDate ?? item.pubDate);
-        return item.title && publishedAt
-          ? [
-              {
-                text: cleanText(item.title),
-                sourceKind: "news" as const,
-                sourceName: "Google News RSS",
-                sourceUrl: item.link,
-                publishedAt,
-              },
-            ]
-          : [];
-      });
-    },
+export const bbcNewsSource: Source = {
+  name: "BBC News",
+  kind: "news",
+  fetch: async () => {
+    const xml = await request(
+      "https://feeds.bbci.co.uk/news/business/rss.xml",
+    );
+    const feed = await new Parser().parseString(xml);
+    return feed.items.slice(0, 20).flatMap((item) => {
+      const publishedAt = validDate(item.isoDate ?? item.pubDate);
+      return item.title && publishedAt
+        ? [
+            {
+              text: cleanText(item.title),
+              sourceKind: "news" as const,
+              sourceName: "BBC News",
+              sourceUrl: item.link,
+              publishedAt,
+            },
+          ]
+        : [];
+    });
   },
-  {
-    name: "Hacker News",
-    kind: "social",
-    fetch: async () => {
-      const cutoff = Math.floor(Date.now() / 1000) - 86400;
-      const raw = JSON.parse(
-        await request(
-          `https://hn.algolia.com/api/v1/search_by_date?tags=story&numericFilters=created_at_i%3E${cutoff}&hitsPerPage=100`,
-        ),
+};
+
+export const twitterSource: Source = {
+  name: "Twitter / X Financial",
+  kind: "social",
+  fetch: async () => {
+    const query =
+      "site:twitter.com OR site:x.com (stock OR market OR Fed OR earnings OR inflation OR tariffs OR war OR Nvidia OR Apple OR Microsoft OR Tesla OR Broadcom OR JPMorgan OR Amazon)";
+    const text = await request(
+      `https://news.google.com/rss/search?q=${encodeURIComponent(
+        query,
+      )}&hl=en-US&gl=US&ceid=US:en`,
+    );
+    if (text.trim().startsWith("{")) {
+      const raw = JSON.parse(text);
+      if (raw.hits && Array.isArray(raw.hits)) {
+        return raw.hits.flatMap((post: any) => {
+          const publishedAt = validDate(post.created_at);
+          return post.title &&
+            publishedAt &&
+            (detectTickers(post.title).length ||
+              /\b(economy|inflation|interest rate|tariff|banking|stock market|credit|finance|war|chip|tech)\b/i.test(
+                post.title,
+              ))
+            ? [
+                {
+                  text: cleanText(post.title).replace(
+                    /\s*-\s*(x\.com|twitter)\s*$/i,
+                    "",
+                  ),
+                  sourceKind: "social" as const,
+                  sourceName: "Twitter / X Financial",
+                  sourceUrl:
+                    post.url ??
+                    `https://news.ycombinator.com/item?id=${encodeURIComponent(post.objectID)}`,
+                  publishedAt,
+                },
+              ]
+            : [];
+        });
+      }
+    }
+    const feed = await new Parser().parseString(text);
+    return feed.items.slice(0, 20).flatMap((item) => {
+      const publishedAt = validDate(item.isoDate ?? item.pubDate);
+      if (!item.title || !publishedAt) return [];
+      const cleaned = cleanText(item.title).replace(
+        /\s*-\s*(x\.com|twitter)\s*$/i,
+        "",
       );
-      const parsed = z
-        .object({
-          hits: z.array(
-            z.object({
-              objectID: z.string(),
-              title: z.string().nullable(),
-              created_at: z.string(),
-            }),
-          ),
-        })
-        .parse(raw);
-      return parsed.hits.flatMap((post) => {
-        const publishedAt = validDate(post.created_at);
-        return post.title && publishedAt && (detectTickers(post.title).length || /\b(economy|inflation|interest rate|tariff|banking|stock market|credit|finance)\b/i.test(post.title))
-          ? [
-              {
-                text: cleanText(post.title),
-                sourceKind: "social" as const,
-                sourceName: "Hacker News",
-                sourceUrl: `https://news.ycombinator.com/item?id=${encodeURIComponent(post.objectID)}`,
-                publishedAt,
-              },
-            ]
-          : [];
-      });
-    },
+      return [
+        {
+          text: cleaned,
+          sourceKind: "social" as const,
+          sourceName: "Twitter / X Financial",
+          sourceUrl: item.link ?? "https://x.com",
+          publishedAt,
+        },
+      ];
+    });
   },
-];
+};
+
+export const presidentialWarSource: Source = {
+  name: "Presidential & Geopolitical Risk",
+  kind: "news",
+  fetch: async () => {
+    const query =
+      '(President OR "White House" OR tariffs OR sanctions OR war OR Pentagon OR "executive order" OR military) (economy OR markets OR defense OR trade OR chips OR energy)';
+    const xml = await request(
+      `https://news.google.com/rss/search?q=${encodeURIComponent(
+        query,
+      )}&hl=en-US&gl=US&ceid=US:en`,
+    );
+    const feed = await new Parser().parseString(xml);
+    return feed.items.slice(0, 20).flatMap((item) => {
+      const publishedAt = validDate(item.isoDate ?? item.pubDate);
+      return item.title && publishedAt
+        ? [
+            {
+              text: cleanText(item.title),
+              sourceKind: "news" as const,
+              sourceName: "Presidential & Geopolitical Risk",
+              sourceUrl: item.link,
+              publishedAt,
+            },
+          ]
+        : [];
+    });
+  },
+};
+
+export const yahooFinanceSource: Source = {
+  name: "Yahoo Finance",
+  kind: "news",
+  fetch: async () => {
+    const xml = await request("https://finance.yahoo.com/news/rssindex");
+    const feed = await new Parser().parseString(xml);
+    return feed.items.slice(0, 20).flatMap((item) => {
+      const publishedAt = validDate(item.isoDate ?? item.pubDate);
+      return item.title && publishedAt
+        ? [
+            {
+              text: cleanText(item.title),
+              sourceKind: "news" as const,
+              sourceName: "Yahoo Finance",
+              sourceUrl: item.link,
+              publishedAt,
+            },
+          ]
+        : [];
+    });
+  },
+};
+
 export const gdeltSource: Source = {
   name: "GDELT",
   kind: "news",
@@ -136,33 +209,18 @@ export const gdeltSource: Source = {
   },
 };
 
-export const yahooFinanceSource: Source = {
-  name: "Yahoo Finance",
-  kind: "news",
-  fetch: async () => {
-    const xml = await request("https://finance.yahoo.com/news/rssindex");
-    const feed = await new Parser().parseString(xml);
-    return feed.items.slice(0, 20).flatMap((item) => {
-      const publishedAt = validDate(item.isoDate ?? item.pubDate);
-      return item.title && publishedAt
-        ? [
-            {
-              text: cleanText(item.title),
-              sourceKind: "news" as const,
-              sourceName: "Yahoo Finance",
-              sourceUrl: item.link,
-              publishedAt,
-            },
-          ]
-        : [];
-    });
-  },
-};
+export const sources: Source[] = [
+  bbcNewsSource,
+  twitterSource,
+  yahooFinanceSource,
+  presidentialWarSource,
+];
 
 export const defaultSources: Source[] = [
-  sources[0],
-  sources[1],
+  bbcNewsSource,
+  twitterSource,
   yahooFinanceSource,
+  presidentialWarSource,
   ...(process.env.NEWS_SOURCE === "gdelt" ? [gdeltSource] : []),
 ];
 export async function fetchSources(adapters: Source[]) {
