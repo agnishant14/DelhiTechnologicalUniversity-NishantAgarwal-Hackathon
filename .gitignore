@@ -13,6 +13,11 @@ data/*
 !data/demo.json
 !data/sources.json
 !data/financial_dataset.json
+!data/portfolio.json
+!data/training/
+.venv/
+__pycache__/
+*.pyc
 *.sqlite
 *.sqlite-*
 *.db
