@@ -294,12 +294,13 @@ export function StressStudio({ data }: { data: StressDashboard }) {
                 return (
                   <tr key={c.asset.id}>
                     <td>
-                      <b>
-                        {c.asset.id} · {c.asset.name}
-                      </b>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                        <span className="asset-id-badge">{c.asset.id}</span>
+                        <b>{c.asset.name}</b>
+                      </div>
                     </td>
                     <td>
-                      <span className="tag">{c.asset.type}</span>
+                      <span className={`tag tag-asset-${c.asset.type.toLowerCase()}`}>{c.asset.type}</span>
                     </td>
                     <td>{money(c.before)}</td>
                     <td>{money(c.after)}</td>
