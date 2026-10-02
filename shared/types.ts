@@ -1,3 +1,5 @@
+import type { CompanySentiment, TopicPrediction } from "./intelligence";
+
 export const STOCKS = [
   {
     ticker: "AAPL",
@@ -134,6 +136,11 @@ export interface Document {
   isSample?: boolean;
 }
 export interface Signal extends Document {
+  topic?: TopicPrediction;
+  companySentiments?: CompanySentiment[];
+  clusterId?: string;
+  duplicateOf?: string;
+  eventMethod?: "topic model" | "explicit cue" | "review";
   id: string;
   mode: Mode;
   tickers: Ticker[];
@@ -374,5 +381,4 @@ export interface WhatIfSimulationResult {
   }[];
   totalPnlImpactMillions: number;
 }
-
 
