@@ -72,7 +72,7 @@ export function Signals({
           <span className="eyebrow">
             NEWS + COMMUNITY · STRUCTURED INTELLIGENCE
           </span>
-          <h1>Less noise. More context.</h1>
+          <h1>Signal feed</h1>
           <p>
             Every score leads back to its source, model output, and assumptions.
           </p>
@@ -166,7 +166,7 @@ export function Signals({
         <aside className="stack">
           <form className="panel compose" onSubmit={submit}>
             <span className="eyebrow">BRING YOUR OWN HEADLINE</span>
-            <h2>Put the engine to work.</h2>
+            <h2>Analyze a headline</h2>
             <label htmlFor="headline-text">Headline or short article</label>
             <textarea
               id="headline-text"
@@ -205,14 +205,6 @@ export function Signals({
               </p>
             )}
           </form>
-          <div className="panel mint">
-            <h3>Sentiment ≠ impact</h3>
-            <p className="small">
-              Sentiment describes the text's tone. Impact is a transparent
-              severity heuristic. A positive headline can still describe a
-              high-impact event.
-            </p>
-          </div>
         </aside>
       </div>
     </>

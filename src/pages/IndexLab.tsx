@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowRight, SlidersHorizontal } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import {
   CartesianGrid,
   Line,
@@ -11,7 +11,7 @@ import {
   YAxis,
 } from "recharts";
 import type { Dashboard, Ticker } from "../../shared/types";
-import { percent, signed, tone } from "../lib/api";
+import { percent, signed, tone, sentimentTone } from "../lib/api";
 import { SignalCard } from "../components/SignalCard";
 
 export function IndexLab({ data }: { data: Dashboard }) {
@@ -39,15 +39,12 @@ export function IndexLab({ data }: { data: Dashboard }) {
       <div className="page-heading">
         <div>
           <span className="eyebrow">MODULE A · TACTICAL INDEX REBALANCING</span>
-          <h1>Follow the signal.</h1>
+          <h1>Index rebalancing</h1>
           <p>
             A 20-stock mock index that responds to company sentiment, with clear
             allocation limits.
           </p>
         </div>
-        <span className="large-tag">
-          <SlidersHorizontal size={18} /> Rules on. Noise down.
-        </span>
       </div>
       <div className="metrics-grid three">
         <div className="metric">
@@ -97,7 +94,7 @@ export function IndexLab({ data }: { data: Dashboard }) {
                 data={history}
                 margin={{ top: 20, right: 20, bottom: 5, left: 0 }}
               >
-                <CartesianGrid vertical={false} stroke="#e8e9e4" />
+                <CartesianGrid vertical={false} stroke="#edf0f4" />
                 <XAxis
                   dataKey="step"
                   tickFormatter={(i: number) => history[i]?.timestamp ?? ""}
@@ -117,19 +114,19 @@ export function IndexLab({ data }: { data: Dashboard }) {
                 />
                 <ReferenceLine
                   y={0.05}
-                  stroke="#959c8e"
+                  stroke="#a1a9b7"
                   strokeDasharray="4 4"
                   label={{
                     value: "5% starting weight",
                     position: "insideTopRight",
-                    fill: "#7d8476",
+                    fill: "#667085",
                     fontSize: 11,
                   }}
                 />
                 <Line
                   type="stepAfter"
                   dataKey={selected}
-                  stroke="#576e24"
+                  stroke="#3564db"
                   strokeWidth={3}
                   dot={{ r: 3 }}
                   isAnimationActive={false}
@@ -142,13 +139,9 @@ export function IndexLab({ data }: { data: Dashboard }) {
             company below to inspect its allocation.
           </p>
         </section>
-        <section className="panel dark-panel">
-          <span className="eyebrow">THE REBALANCING RECIPE</span>
-          <h2>
-            Measured moves.
-            <br />
-            Explicit limits.
-          </h2>
+        <section className="panel policy-panel">
+          <span className="eyebrow">ALLOCATION RULES</span>
+          <h2>Portfolio limits</h2>
           <div className="policy-line">
             <b>2–15%</b>
             <span>Weight per company</span>
@@ -175,8 +168,8 @@ export function IndexLab({ data }: { data: Dashboard }) {
       <section className="panel">
         <div className="section-title">
           <div>
-            <span className="eyebrow">EXPLORE THE BOOK</span>
-            <h2>Where the weights moved</h2>
+            <span className="eyebrow">CURRENT HOLDINGS</span>
+            <h2>Company weights</h2>
           </div>
           <select
             aria-label="Filter index sector"
@@ -227,7 +220,9 @@ export function IndexLab({ data }: { data: Dashboard }) {
                       </button>
                     </td>
                     <td className="muted">{h.sector}</td>
-                    <td className={tone(h.sentiment)}>{signed(h.sentiment)}</td>
+                    <td className={sentimentTone(h.sentiment)}>
+                      {signed(h.sentiment)}
+                    </td>
                     <td>
                       <div className="weight-cell">
                         <b>{percent(h.weight, 2)}</b>

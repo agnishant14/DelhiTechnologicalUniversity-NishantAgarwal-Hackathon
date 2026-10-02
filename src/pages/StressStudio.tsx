@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  ArrowDownRight,
-  History,
-  RotateCcw,
-  SlidersHorizontal,
-} from "lucide-react";
+import { ArrowDownRight, History, RotateCcw } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -15,11 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { EVENTS, type EventType } from "../../shared/types";
-import type {
-  Shocks,
-  StressDashboard,
-  StressResult,
-} from "../../shared/types";
+import type { Shocks, StressDashboard, StressResult } from "../../shared/types";
 import { ago, api, money, signed, tone } from "../lib/api";
 
 const CONTROLS: {
@@ -110,20 +101,17 @@ export function StressStudio({ data }: { data: StressDashboard }) {
           <span className="eyebrow">
             MODULE B · STRATEGIC PORTFOLIO STRESS TESTING
           </span>
-          <h1>Make room for the unexpected.</h1>
+          <h1>Portfolio stress test</h1>
           <p>
             Explore how an event travels through a $100m synthetic wholesale
             asset book.
           </p>
         </div>
-        <span className="large-tag">
-          <SlidersHorizontal size={18} /> Move a slider. See the impact.
-        </span>
       </div>
       <div className="studio-grid">
         <section className="panel controls-panel">
           <span className="eyebrow">YOUR SCENARIO</span>
-          <h2>Turn up the pressure.</h2>
+          <h2>Scenario settings</h2>
           <label className="field-label" htmlFor="stress-event">
             Event preset
           </label>
@@ -194,7 +182,7 @@ export function StressStudio({ data }: { data: StressDashboard }) {
                 ? ago(saved.timestamp)
                 : pending
                   ? "Calculating…"
-                  : "Calculated by API"}
+                  : "Preview ready"}
             </span>
           </div>
           {error && (
@@ -227,7 +215,7 @@ export function StressStudio({ data }: { data: StressDashboard }) {
                 data={chart}
                 margin={{ top: 15, right: 8, bottom: 0, left: 0 }}
               >
-                <CartesianGrid vertical={false} stroke="#e8e9e4" />
+                <CartesianGrid vertical={false} stroke="#edf0f4" />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} />
                 <YAxis
                   tickFormatter={(n: number) => `$${n}m`}
@@ -238,13 +226,13 @@ export function StressStudio({ data }: { data: StressDashboard }) {
                 <Bar
                   name="Before"
                   dataKey="before"
-                  fill="#dce2cd"
+                  fill="#e1e6ee"
                   radius={[5, 5, 0, 0]}
                 />
                 <Bar
                   name="After"
                   dataKey="after"
-                  fill="#596e32"
+                  fill="#3564db"
                   radius={[5, 5, 0, 0]}
                 />
               </BarChart>
@@ -253,6 +241,13 @@ export function StressStudio({ data }: { data: StressDashboard }) {
           {saved && (
             <div className="saved-trigger">
               <b>Triggered by</b>
+              <p className="small muted">
+                Recorded with{" "}
+                {saved.analysisVersion
+                  ? `analysis ${saved.analysisVersion}`
+                  : "an earlier engine"}
+                . Historical results are preserved.
+              </p>
               <p>{saved.headline}</p>
               <span className="small muted">
                 Impact {saved.impact}/10 ·{" "}
@@ -339,6 +334,9 @@ export function StressStudio({ data }: { data: StressDashboard }) {
                     {r.event} · impact {r.impact}/10
                   </b>
                   <small>{r.headline}</small>
+                  {!r.analysisVersion && (
+                    <small>Earlier engine · historical result</small>
+                  )}
                 </span>
                 <strong className={tone(r.pnl)}>{money(r.pnl)}</strong>
               </button>
@@ -350,9 +348,9 @@ export function StressStudio({ data }: { data: StressDashboard }) {
             </p>
           )}
         </section>
-        <section className="panel mint">
+        <section className="panel subtle">
           <span className="eyebrow">KNOW THE ASSUMPTIONS</span>
-          <h2>Transparent, simplified valuation.</h2>
+          <h2>Valuation assumptions</h2>
           <p>
             Loans and bonds use duration × rate/spread changes. Equities use
             beta. Swaps use signed dollar sensitivity per basis point; forwards
