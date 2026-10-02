@@ -275,4 +275,15 @@ describe("pipeline API", () => {
     expect(service.dashboard().history).toEqual(before.history);
     expect(service.stress()).toEqual(stress);
   });
+  it("serves accurate stock and index quotes from tradingview", async () => {
+    const res = await request(createApp(service))
+      .get("/api/quotes")
+      .expect(200);
+    expect(res.body.source).toBe("tradingview");
+    expect(res.body.stocks.NVDA).toBeDefined();
+    expect(res.body.stocks.NVDA.price).toBeGreaterThan(0);
+    expect(res.body.stocks.AAPL).toBeDefined();
+    expect(res.body.stocks.AAPL.price).toBeGreaterThan(0);
+    expect(res.body.indices.length).toBeGreaterThan(0);
+  });
 });
