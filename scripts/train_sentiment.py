@@ -42,16 +42,14 @@ def metrics(logits, labels, temperature=1.0):
     return {
         "count": len(labels), "accuracy": float(accuracy_score(labels, predictions)),
         "macroF1": float(f1_score(labels, predictions, average="macro")),
-        "classConfusionMatrix": confusion_matrix(labels, predictions, labels=[0, 1, 2]).tolist(),
-        "classReport": classification_report(labels, predictions, labels=[0, 1, 2], target_names=LABELS, output_dict=True, zero_division=0),
         "policyAccuracy": float(accuracy_score(labels, policy)),
         "policyMacroF1": float(f1_score(labels, policy, average="macro")),
-        "negativeRecall": float(((policy == 1) & (labels == 1)).sum() / max(1, (labels == 1).sum())),
-        "negativeToNeutral": int(((policy == 2) & (labels == 1)).sum()),
+        "negativeRecall": float(((predictions == 1) & (labels == 1)).sum() / max(1, (labels == 1).sum())),
+        "negativeToNeutral": int(((predictions == 2) & (labels == 1)).sum()),
         "nll": float(log_loss(labels, probabilities, labels=[0, 1, 2])),
         "brier": float(np.mean(np.sum((probabilities - np.eye(3)[labels]) ** 2, axis=1))),
-        "ece10": float(ece), "confusionMatrix": confusion_matrix(labels, policy, labels=[0, 1, 2]).tolist(),
-        "perClass": classification_report(labels, policy, labels=[0, 1, 2], target_names=LABELS, output_dict=True, zero_division=0),
+        "ece10": float(ece), "confusionMatrix": confusion_matrix(labels, predictions, labels=[0, 1, 2]).tolist(),
+        "perClass": classification_report(labels, predictions, labels=[0, 1, 2], target_names=LABELS, output_dict=True, zero_division=0),
     }
 
 
