@@ -47,8 +47,9 @@ export function IndexLab({
           <span className="eyebrow">MODULE A · TACTICAL INDEX REBALANCING</span>
           <h1>Index rebalancing</h1>
           <p>
-            A 20-stock mock index that responds to company sentiment, with clear
-            allocation limits.
+            A 20-stock tactical benchmark index that responds dynamically to
+            NLP sentiment surveillance, constrained by institutional allocation
+            and turnover limits.
           </p>
         </div>
       </div>
