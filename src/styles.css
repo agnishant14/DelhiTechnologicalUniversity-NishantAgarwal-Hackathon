@@ -1163,8 +1163,16 @@ label {
 }
 
 .rev-metric-lead small {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rev-metric-lead small.positive {
+  color: var(--green);
+}
+
+.rev-metric-lead small.negative {
   color: var(--red);
 }
 
@@ -1838,24 +1846,22 @@ dialog::backdrop {
   text-align: left;
 }
 
-.stock-button .company-text,
-.stock-button span {
+.stock-button .company-text {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 1px;
   line-height: 1.25;
 }
 
-.stock-button .company-ticker,
-.stock-button span b {
+.stock-button .company-ticker {
   font-size: 13px;
   font-weight: 700;
   color: var(--text-main);
   letter-spacing: -0.01em;
 }
 
-.stock-button .company-name,
-.stock-button span small {
+.stock-button .company-name {
   color: var(--text-muted);
   font-size: 11px;
   font-weight: 400;
