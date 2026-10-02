@@ -196,10 +196,10 @@ export function Overview({
                 className="greeting-pill-action"
                 onClick={onRunEvent}
                 disabled={busy}
-                title="Sync live financial feeds or replay next scenario"
+                title="Sync live TradingView quotes and NLP risk feeds"
               >
                 <Code2 size={13} color="#2563eb" />
-                <span>{data.mode === "demo" ? "Run Next Event" : "Synch Live Feeds"}</span>
+                <span>{data.mode === "demo" ? "Run Next Event" : "Sync with TradingView"}</span>
               </button>
             </div>
 
