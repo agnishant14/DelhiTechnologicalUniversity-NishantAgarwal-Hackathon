@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
-import { Download, Search, Send } from "lucide-react";
+import { Download, Search, Send, X } from "lucide-react";
 import { EVENTS, STOCKS, type Dashboard } from "../../shared/types";
 import { SignalCard } from "../components/SignalCard";
+import { StockLogo } from "../StockLogo";
 import { api } from "../lib/api";
 
 export function Signals({
@@ -119,6 +120,22 @@ export function Signals({
             <option key={s}>{s}</option>
           ))}
         </select>
+        {ticker && (
+          <div
+            className="chip active"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}
+          >
+            <StockLogo ticker={ticker} size={16} />
+            <span>{ticker}</span>
+            <button
+              onClick={() => setTicker("")}
+              style={{ border: 0, background: "none", padding: 0, cursor: "pointer", display: "flex", color: "inherit" }}
+              title="Clear company filter"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
       </div>
       <div className="row between feed-toolbar">
         <span className="small muted">
