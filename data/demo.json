@@ -10,63 +10,13 @@
     "sourceKind": "social"
   },
   {
-    "id": "demo-03",
-    "text": "Tesla misses earnings expectations as profit declines and demand weakens.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-04",
-    "text": "NVIDIA launches a new chip as strong demand drives record orders.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-05",
-    "text": "Amazon earnings exceed forecasts with improved profit margins.",
-    "sourceKind": "news"
-  },
-  {
     "id": "demo-06",
     "text": "JPMorgan credit losses surge as borrowers default amid a liquidity crisis.",
     "sourceKind": "news"
   },
   {
-    "id": "demo-07",
-    "text": "Google and Walmart announce an expanded partnership for automated retail fulfillment.",
-    "sourceKind": "social"
-  },
-  {
-    "id": "demo-08",
-    "text": "Exxon Mobil profits decline as oil demand falls and recession fears mount.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-09",
-    "text": "Meta Platforms reports strong revenue growth and higher profits.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-10",
-    "text": "Johnson & Johnson and Eli Lilly navigate regulatory scrutiny over patent expirations.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-11",
-    "text": "I am optimistic about NVIDIA. Record growth and strong demand beat expectations.",
-    "sourceKind": "social"
-  },
-  {
-    "id": "demo-12",
-    "text": "Tesla is disappointing. Weak sales and mounting losses make me bearish.",
-    "sourceKind": "social"
-  },
-  {
     "id": "demo-13",
     "text": "New export restrictions threaten NVIDIA sales as geopolitical tensions intensify.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-14",
-    "text": "Apple announces an acquisition to strengthen its services business.",
     "sourceKind": "news"
   },
   {
@@ -75,48 +25,8 @@
     "sourceKind": "news"
   },
   {
-    "id": "demo-16",
-    "text": "JPMorgan reports improved earnings and strong growth after restructuring.",
-    "sourceKind": "social"
-  },
-  {
-    "id": "demo-17",
-    "text": "Exxon Mobil sees profits surge following a sharp increase in oil prices.",
+    "id": "demo-03",
+    "text": "Tesla misses earnings expectations as profit declines and demand weakens.",
     "sourceKind": "news"
-  },
-  {
-    "id": "demo-18",
-    "text": "Federal Reserve policy impacts Visa and Mastercard payment network transaction volumes.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-19",
-    "text": "Amazon faces an antitrust investigation and a possible regulatory fine.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-20",
-    "text": "Broadcom unveils next-generation AI switching silicon with robust datacenter backlog.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-21",
-    "text": "Meta Platforms earnings plunge as advertising revenue misses expectations.",
-    "sourceKind": "social"
-  },
-  {
-    "id": "demo-22",
-    "text": "Google reports record profits and raises its revenue guidance.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-23",
-    "text": "Tesla announces improved margins and strong quarterly earnings growth.",
-    "sourceKind": "news"
-  },
-  {
-    "id": "demo-24",
-    "text": "Costco and Home Depot report resilient consumer traffic and steady margin expansion.",
-    "sourceKind": "social"
   }
 ]
