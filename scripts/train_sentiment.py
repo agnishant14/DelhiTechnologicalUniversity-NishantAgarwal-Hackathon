@@ -42,6 +42,8 @@ def metrics(logits, labels, temperature=1.0):
     return {
         "count": len(labels), "accuracy": float(accuracy_score(labels, predictions)),
         "macroF1": float(f1_score(labels, predictions, average="macro")),
+        "classConfusionMatrix": confusion_matrix(labels, predictions, labels=[0, 1, 2]).tolist(),
+        "classReport": classification_report(labels, predictions, labels=[0, 1, 2], target_names=LABELS, output_dict=True, zero_division=0),
         "policyAccuracy": float(accuracy_score(labels, policy)),
         "policyMacroF1": float(f1_score(labels, policy, average="macro")),
         "negativeRecall": float(((policy == 1) & (labels == 1)).sum() / max(1, (labels == 1).sum())),
@@ -122,9 +124,9 @@ def train(args):
     steps = int(np.ceil(len(corpora["train"].rows) / args.batch_size))
     scheduler = get_linear_schedule_with_warmup(optimizer, max(1, int(steps * args.epochs * .06)), steps * args.epochs)
     frequencies = np.bincount(labels["train"], minlength=3)
-    weights = np.sqrt(len(labels["train"]) / (3 * frequencies))
+    weights = (len(labels["train"]) / (3 * frequencies)) ** args.class_weight_power
     class_weights = torch.tensor(weights / weights.mean(), dtype=torch.float32, device=device)
-    best, stale, history = -1.0, 0, []
+    best, stale, selected_epoch, history = -1.0, 0, 0, []
     report({"stage": "training", "device": device, "trainableParameters": trainable,
             "rank": args.rank, "layers": args.layers, "stepsPerEpoch": steps})
     for epoch in range(args.epochs):
@@ -147,8 +149,8 @@ def train(args):
         result = {"epoch": epoch + 1, "loss": total / count, "dev": metrics(dev_logits, labels["dev"])}
         history.append(result)
         report({"stage": "validation", **result})
-        if result["dev"]["policyMacroF1"] > best + .001:
-            best, stale = result["dev"]["policyMacroF1"], 0
+        if result["dev"][args.selection_metric] > best + .001:
+            best, stale, selected_epoch = result["dev"][args.selection_metric], 0, epoch + 1
             model.save_pretrained(args.output / "adapter")
             tokenizer.save_pretrained(args.output / "adapter")
             np.savez(args.output / "best-dev.npz", logits=dev_logits, labels=labels["dev"])
@@ -171,14 +173,15 @@ def train(args):
     dev = np.load(args.output / "best-dev.npz")
     calibrated_dev = metrics(dev["logits"], dev["labels"], temp)
     raw_dev = metrics(dev["logits"], dev["labels"])
-    use_temperature = calibrated_dev["policyMacroF1"] >= raw_dev["policyMacroF1"] - .003
+    use_temperature = calibrated_dev[args.selection_metric] >= raw_dev[args.selection_metric] - .003
     summary = {
         "version": "gorisk-sentiment-v2", "baseModel": BASE, "baseRevision": REVISION,
         "seed": SEED, "device": device, "rank": args.rank, "layers": args.layers,
         "learningRate": args.learning_rate, "batchSize": args.batch_size, "maxLength": args.max_length,
         "trainableParameters": trainable, "classWeights": class_weights.cpu().tolist(),
-        "phrasebankLossWeight": .6, "selectionMetric": "dev policyMacroF1", "history": history,
-        "baselineDev": baseline, "selectedEpoch": max(history, key=lambda r: r["dev"]["policyMacroF1"])["epoch"],
+        "phrasebankLossWeight": .6, "classWeightPower": args.class_weight_power,
+        "selectionMetric": f"dev {args.selection_metric}", "history": history,
+        "baselineDev": baseline, "selectedEpoch": selected_epoch,
         "temperature": temp if use_temperature else 1.0, "fittedTemperature": temp,
         "temperatureAccepted": bool(use_temperature), "selectedDev": calibrated_dev if use_temperature else raw_dev,
         "calibration": metrics(calibration, labels["calibration"], temp if use_temperature else 1.0),
@@ -186,7 +189,7 @@ def train(args):
     }
     (args.output / "training.json").write_text(json.dumps(summary, indent=2) + "\n")
     report({"stage": "complete", "selectedEpoch": summary["selectedEpoch"], "temperature": summary["temperature"],
-            "baselineDevF1": baseline["policyMacroF1"], "trainedDevF1": summary["selectedDev"]["policyMacroF1"]})
+            "baselineDevF1": baseline[args.selection_metric], "trainedDevF1": summary["selectedDev"][args.selection_metric]})
 
 
 if __name__ == "__main__":
@@ -198,4 +201,6 @@ if __name__ == "__main__":
     parser.add_argument("--learning-rate", type=float, default=2e-4)
     parser.add_argument("--batch-size", type=int, default=24)
     parser.add_argument("--max-length", type=int, default=128)
+    parser.add_argument("--class-weight-power", type=float, default=.5)
+    parser.add_argument("--selection-metric", choices=["macroF1", "policyMacroF1"], default="macroF1")
     train(parser.parse_args())
