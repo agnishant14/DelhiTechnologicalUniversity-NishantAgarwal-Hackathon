@@ -1868,6 +1868,17 @@ dialog::backdrop {
   transform: translateY(-1px);
 }
 
+.panel .signal-card:not(.compact) {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.panel .signal-card:not(.compact):hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: var(--shadow-hover);
+}
+
 .signal-card.compact {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1981,11 +1992,21 @@ dialog::backdrop {
   user-select: none;
   padding: 4px 8px;
   border-radius: var(--radius-sm);
-  transition: background-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
-.signal-details summary::-webkit-details-marker {
-  display: none;
+.signal-details summary::-webkit-details-marker,
+.signal-details summary::marker {
+  display: none !important;
+  content: "" !important;
+}
+
+.signal-details summary svg {
+  transition: transform 0.2s ease;
+}
+
+.signal-details[open] summary svg {
+  transform: rotate(180deg);
 }
 
 .signal-details summary:hover {
