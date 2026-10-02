@@ -100,7 +100,7 @@ npm ci
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**; API port **3001**. The fine-tuned FinBERT weights download from the [model release](https://github.com/agnishant14/DelhiTechnologicalUniversity-NishantAgarwal-Hackathon/releases/tag/sentiment-v2.0.0) on first use (**209 MiB**). Later starts use the verified local cache. The trained topic model is bundled. Live feeds poll every five minutes; manual refresh has a one-minute cooldown. New workspaces start in Live news.
+Open **http://127.0.0.1:5173**; API port **3001**. The fine-tuned FinBERT weights download from the [model release](https://github.com/agnishant14/DelhiTechnologicalUniversity-NishantAgarwal-Hackathon/releases/tag/sentiment-v2.0.0) on first use (**209 MiB**); allow a few minutes on slower connections. Later starts use the verified local cache. The trained topic model is bundled. Live feeds poll every five minutes; manual refresh has a one-minute cooldown. New workspaces start in Live news.
 
 For a production build, run `npm run build` then `npm start`, and open **http://127.0.0.1:3001**. GitHub hosts the source, not the running API.
 

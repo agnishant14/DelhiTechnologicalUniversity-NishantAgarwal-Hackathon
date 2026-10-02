@@ -53,7 +53,7 @@ export async function ensureSentimentModel(
     const temporary = `${onnx}.${randomUUID()}.tmp`;
     try {
       const response = await fetcher(artifact.url, {
-        signal: AbortSignal.timeout(300_000),
+        signal: AbortSignal.timeout(900_000),
       });
       if (!response.ok || !response.body)
         throw new Error(`Sentiment model download failed (${response.status})`);
