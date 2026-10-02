@@ -13,6 +13,7 @@ import {
   RefreshCw,
   SlidersHorizontal,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
 import {
   Area,
@@ -198,7 +199,7 @@ export function Overview({
                 disabled={busy}
                 title="Sync live TradingView quotes and NLP risk feeds"
               >
-                <Code2 size={13} color="#2563eb" />
+                <TrendingUp size={13} color="#2563eb" strokeWidth={2.2} />
                 <span>{data.mode === "demo" ? "Run Next Event" : "Sync with TradingView"}</span>
               </button>
             </div>
@@ -214,7 +215,7 @@ export function Overview({
                     : "Fetch live financial feeds"
                 }
               >
-                <Play size={13} />
+                <Play size={12} fill="currentColor" strokeWidth={0} />
                 <span>
                   {data.mode === "demo" ? "Run Next Event" : "Sync Feeds"}
                 </span>
@@ -226,7 +227,7 @@ export function Overview({
                 disabled={busy}
                 title="Toggle between Live Feeds and Demo Replay"
               >
-                <RefreshCw size={13} />
+                <RefreshCw size={13} strokeWidth={2} color="#64748b" />
                 <span>{data.mode === "live" ? "Demo Mode" : "Live Feeds"}</span>
               </button>
 
@@ -235,7 +236,7 @@ export function Overview({
                 onClick={() => navigate("signals")}
                 title="Explore Hugging Face & Kaggle benchmark records"
               >
-                <Database size={13} />
+                <Database size={13} color="#2563eb" strokeWidth={2} />
                 <span>Dataset (920+)</span>
               </button>
 
@@ -244,7 +245,7 @@ export function Overview({
                 onClick={openSandbox}
                 title="Interactive counterfactual simulation with Explainable AI token attribution"
               >
-                <Sparkles size={13} />
+                <Sparkles size={13} color="#d97706" strokeWidth={2} />
                 <span>What-If (XAI)</span>
               </button>
             </div>
