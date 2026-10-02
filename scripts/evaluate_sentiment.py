@@ -34,6 +34,10 @@ def evaluate(args):
     rows, splits = prepare()
     test = [r for r in rows if r["split"] == "test"]
     settings = json.loads((args.run / "training.json").read_text())
+    exported = json.loads((args.model / "export.json").read_text())
+    if exported["selectedRun"] != args.run.name:
+        raise ValueError("Exported model does not match the selected training run")
+    settings["temperature"] = exported["temperature"]
     tokenizer = AutoTokenizer.from_pretrained(model_directory())
     corpus = Corpus(test, tokenizer, settings["maxLength"])
     labels = np.array([r["label"] for r in test])
@@ -46,23 +50,23 @@ def evaluate(args):
     del model
     if device == "mps":
         torch.mps.empty_cache()
-    runtime = session(args.model / "onnx/model_quantized.onnx")
+    runtime = session(args.model / "onnx/model_fp16.onnx")
     started = time.perf_counter()
     deployed = predict_onnx(runtime, corpus)
     elapsed = time.perf_counter() - started
     report = {
         "version": settings["version"], "labelOrder": LABELS,
         "selection": {"run": args.run.name, "epoch": settings["selectedEpoch"],
-                      "criterion": "development macro-F1; final test not used for selection"},
+                      "criterion": "development metrics and fixed bankruptcy/company regression checks; test not used for selection"},
         "test": splits["splits"]["test"],
         "preprocessing": "Remove URLs, normalize whitespace, add terminal punctuation; first 128 tokens for both models",
         "labelRule": "highest-probability class; sentiment score remains P(positive) - P(negative)",
         "baseline": metrics(baseline, labels), "fineTuned": metrics(trained, labels),
-        "deployedQ8": metrics(deployed, labels),
+        "deployed": metrics(deployed, labels),
         "majorityAccuracy": float(np.bincount(labels).max() / len(labels)),
         "pairedImprovement": accuracy_interval(test, labels, baseline, deployed),
-        "quantizationClassAgreement": float(np.mean(trained.argmax(1) == deployed.argmax(1))),
-        "inference": {"runtime": "ONNX Runtime CPU", "batchSize": 24,
+        "exportClassAgreement": float(np.mean(trained.argmax(1) == deployed.argmax(1))),
+        "inference": {"runtime": "ONNX Runtime CPU", "batchSize": 1,
                       "testSeconds": round(elapsed, 3), "examplesPerSecond": round(len(test) / elapsed, 2)},
         "limits": ["Historical English financial posts, not a future-news or market-return benchmark",
                    "PhraseBank was used in base-model training and is excluded from independent evaluation",
@@ -75,12 +79,18 @@ def evaluate(args):
     probabilities = [softmax(x, axis=1) for x in [baseline, trained, deployed]]
     records = [{"id": r["id"], "label": r["label"],
                 **{name: [round(float(v), 7) for v in p[i]]
-                   for name, p in zip(["baseline", "fineTuned", "deployedQ8"], probabilities)}}
+                   for name, p in zip(["baseline", "fineTuned", "deployed"], probabilities)}}
                for i, r in enumerate(test)]
     raw = "".join(json.dumps(r, separators=(",", ":")) + "\n" for r in records).encode()
     (args.output / "test-predictions.jsonl.gz").write_bytes(gzip.compress(raw, mtime=0))
+    fixtures = []
+    for label in range(3):
+        indices = np.where(labels == label)[0][:8]
+        fixtures.extend({"text": test[i]["text"], "probabilities": dict(zip(LABELS, probabilities[2][i].tolist()))}
+                        for i in indices)
+    (args.output / "parity.json").write_text(json.dumps(fixtures, indent=2) + "\n")
     print(json.dumps({k: {m: report[k][m] for m in ["accuracy", "macroF1", "ece10"]}
-                      for k in ["baseline", "fineTuned", "deployedQ8"]}, indent=2))
+                      for k in ["baseline", "fineTuned", "deployed"]}, indent=2))
 
 
 if __name__ == "__main__":

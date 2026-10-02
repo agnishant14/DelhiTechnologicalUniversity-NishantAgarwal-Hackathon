@@ -18,6 +18,7 @@ import { gunzipSync } from "node:zlib";
 export interface SentimentArtifact {
   version: string;
   maxLength: number;
+  dtype: "fp16" | "q8";
   url: string;
   sha256: string;
   bytes: number;
@@ -41,7 +42,12 @@ export async function ensureSentimentModel(
   assets = path.resolve("models/sentiment"),
   fetcher: typeof fetch = fetch,
 ) {
-  const onnx = path.join(directory, "onnx/model_quantized.onnx");
+  const onnx = path.join(
+    directory,
+    artifact.dtype === "fp16"
+      ? "onnx/model_fp16.onnx"
+      : "onnx/model_quantized.onnx",
+  );
   await mkdir(path.dirname(onnx), { recursive: true });
   if (!(await verified(onnx, artifact))) {
     const temporary = `${onnx}.${randomUUID()}.tmp`;

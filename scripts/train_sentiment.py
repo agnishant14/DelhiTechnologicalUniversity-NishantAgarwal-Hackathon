@@ -98,6 +98,7 @@ def train(args):
                for s in ["train", "dev", "calibration"]}
     labels = {s: np.array([r["label"] for r in corpus.rows]) for s, corpus in corpora.items()}
     model = AutoModelForSequenceClassification.from_pretrained(model_directory(), attn_implementation="eager").to(device)
+    model.config._name_or_path = BASE
     args.output.mkdir(parents=True, exist_ok=True)
     log = args.output / "progress.jsonl"
 

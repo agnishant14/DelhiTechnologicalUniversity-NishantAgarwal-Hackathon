@@ -35,6 +35,7 @@ async function fixture() {
   const bytes = "verified model bytes";
   const artifact = {
     version: "test",
+    dtype: "q8" as const,
     maxLength: 128,
     url: "https://example.com/model.onnx",
     bytes: Buffer.byteLength(bytes),
@@ -45,19 +46,27 @@ async function fixture() {
 }
 
 describe("trained sentiment model cache", () => {
-  it("downloads verified weights once and works from cache offline", async () => {
-    const { artifact, cache, assets, fetcher, bytes } = await fixture();
-    await ensureSentimentModel(artifact, cache, assets, fetcher);
-    expect(
-      await readFile(path.join(cache, "onnx/model_quantized.onnx"), "utf8"),
-    ).toBe(bytes);
-    fetcher.mockRejectedValue(new Error("offline"));
-    await expect(
-      ensureSentimentModel(artifact, cache, assets, fetcher),
-    ).resolves.toBe(cache);
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(await readFile(path.join(cache, "config.json"), "utf8")).toBe("{}");
-  });
+  it.each(["q8", "fp16"] as const)(
+    "downloads verified %s weights once and works from cache offline",
+    async (dtype) => {
+      const { artifact, cache, assets, fetcher, bytes } = await fixture();
+      const selected = { ...artifact, dtype };
+      const filename =
+        dtype === "fp16" ? "model_fp16.onnx" : "model_quantized.onnx";
+      await ensureSentimentModel(selected, cache, assets, fetcher);
+      expect(await readFile(path.join(cache, "onnx", filename), "utf8")).toBe(
+        bytes,
+      );
+      fetcher.mockRejectedValue(new Error("offline"));
+      await expect(
+        ensureSentimentModel(selected, cache, assets, fetcher),
+      ).resolves.toBe(cache);
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(await readFile(path.join(cache, "config.json"), "utf8")).toBe(
+        "{}",
+      );
+    },
+  );
 
   it("repairs same-size cache corruption instead of accepting it", async () => {
     const { artifact, cache, assets, fetcher, bytes } = await fixture();
