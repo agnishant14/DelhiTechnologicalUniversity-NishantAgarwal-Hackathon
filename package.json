@@ -1,6 +1,6 @@
 {
-  "name": "signaldesk",
-  "version": "1.0.0",
+  "name": "gorisk",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -13,19 +13,17 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "test:model": "tsx scripts/check-model.ts",
-    "format": "prettier --write src server shared tests scripts *.ts *.json *.html *.md"
+    "format": "prettier --write src server shared tests scripts *.ts *.json *.html *.md",
+    "train:model": "python3 scripts/train-topic.py"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.0",
-    "clsx": "^2.1.1",
     "express": "^5.1.0",
     "lucide-react": "^0.468.0",
-    "motion": "^13.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "recharts": "^3.1.2",
     "rss-parser": "^3.13.0",
-    "tailwind-merge": "^3.7.0",
     "zod": "^4.1.0"
   },
   "devDependencies": {
