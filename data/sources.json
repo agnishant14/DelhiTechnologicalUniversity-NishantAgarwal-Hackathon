@@ -34,11 +34,13 @@
   ],
   "liveTerms": "Providers may delay or block requests. Public access does not transfer content ownership. Original URLs and timestamps are retained; exported live content remains subject to provider terms.",
   "sentimentModel": {
-    "name": "Xenova/finbert",
-    "url": "https://huggingface.co/Xenova/finbert",
+    "name": "gorisk-sentiment-v2",
+    "url": "https://github.com/agnishant14/DelhiTechnologicalUniversity-NishantAgarwal-Hackathon/releases/tag/sentiment-v2.0.0",
     "baseModel": "https://huggingface.co/ProsusAI/finbert",
-    "revision": "8f269abebfdd9009d7d9b5e96af7e5c6bfe50b20",
-    "use": "Pretrained local sentiment inference, first 512 tokens. Weights are downloaded to an ignored cache and retain their upstream license."
+    "revision": "4556d13015211d73dccd3fdd39d39232506f3e43",
+    "manifest": "models/sentiment/manifest.json",
+    "trainingSources": "data/sentiment/SOURCE.md",
+    "use": "FinBERT fine-tuned on 10,895 human-annotated financial examples. Float16 CPU inference, first 128 tokens, calibrated probabilities and argmax labels. Release weights are checksum-verified in an ignored cache; model/data notices are in models/sentiment/LICENSE.md."
   },
   "topicModel": {"path": "models/topic.json.gz", "version": "gorisk-topic-v1", "use": "Locally trained TF-IDF and logistic regression; coefficients and vocabulary are bundled for JavaScript inference."}
 }
