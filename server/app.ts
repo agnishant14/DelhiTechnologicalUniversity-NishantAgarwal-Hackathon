@@ -43,20 +43,37 @@ export function createApp(service: RiskService) {
   app.get("/api/model", (_req, res) => res.json(metrics));
   app.get("/api/stress", (_req, res) => res.json(service.stress()));
   app.post("/api/stress/simulate", (req, res) => {
-    const input = z.object({
-      event: z.enum(EVENTS), impact: z.number().int().min(1).max(10).default(10),
-      shocks: z.object({ equityPct: z.number().min(-60).max(40), ratesBps: z.number().min(-500).max(500), creditBps: z.number().min(-200).max(1000), fxPct: z.number().min(-40).max(40) }).optional(),
-    }).parse(req.body);
+    const input = z
+      .object({
+        event: z.enum(EVENTS),
+        impact: z.number().int().min(1).max(10).default(10),
+        shocks: z
+          .object({
+            equityPct: z.number().min(-60).max(40),
+            ratesBps: z.number().min(-500).max(500),
+            creditBps: z.number().min(-200).max(1000),
+            fxPct: z.number().min(-40).max(40),
+          })
+          .optional(),
+      })
+      .parse(req.body);
     res.json(runStress(input.event, input.impact, service.mode, input.shocks));
   });
   app.post("/api/preview", async (req, res) => {
-    const { text } = z.object({ text: z.string().trim().min(10).max(6000) }).parse(req.body);
+    const { text } = z
+      .object({ text: z.string().trim().min(10).max(6000) })
+      .parse(req.body);
     res.json(await service.preview(text));
   });
   app.get("/api/export", (_req, res) =>
     res
       .attachment(`gorisk-${service.mode}.json`)
-      .json({ exportedAt: new Date().toISOString(), ...service.dashboard() }),
+      .json({
+        exportedAt: new Date().toISOString(),
+        ...service.dashboard(),
+        stress: service.stress(),
+        topicModel: metrics,
+      }),
   );
   app.post("/api/analyze", async (req, res) => {
     const doc = documentSchema.parse(req.body),
