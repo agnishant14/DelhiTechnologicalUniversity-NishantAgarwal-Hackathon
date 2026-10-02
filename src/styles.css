@@ -1752,15 +1752,15 @@ dialog::backdrop {
   justify-content: flex-start;
   gap: 10px;
   padding: 6px 10px;
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  background: #ffffff;
-  font-size: 12px;
+  background: transparent;
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: left;
 }
 
+.stock-button .company-text,
 .stock-button span {
   display: flex;
   flex-direction: column;
@@ -1768,16 +1768,31 @@ dialog::backdrop {
   line-height: 1.25;
 }
 
+.stock-button .company-ticker,
+.stock-button span b {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+.stock-button .company-name,
 .stock-button span small {
   color: var(--text-muted);
-  font-size: 10.5px;
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.stock-button:hover {
+  background: var(--surface);
+  border-color: var(--line);
 }
 
 .stock-button.active,
-.stock-button:hover,
 .selected-row .stock-button {
   background: #eff6ff;
-  border-color: #93c5fd;
+  border-color: #bfdbfe;
   box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
 }
 
