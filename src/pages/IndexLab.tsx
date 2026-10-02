@@ -223,12 +223,13 @@ export function IndexLab({
                         <button
                           className="stock-button"
                           onClick={() => setSelected(h.ticker)}
+                          title={`Inspect ${h.name} (${h.ticker})`}
                         >
-                          <StockLogo ticker={h.ticker} size={22} />
-                          <span>
-                            <b>{h.ticker}</b>
-                            <small>{h.name}</small>
-                          </span>
+                          <StockLogo ticker={h.ticker} size={28} />
+                          <div className="company-text">
+                            <span className="company-ticker">{h.ticker}</span>
+                            <span className="company-name">{h.name}</span>
+                          </div>
                         </button>
                       </td>
                       <td className="muted">{h.sector}</td>
