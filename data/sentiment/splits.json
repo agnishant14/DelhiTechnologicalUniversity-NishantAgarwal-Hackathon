@@ -1,0 +1,66 @@
+{
+  "seed": 42,
+  "rawCount": 15384,
+  "exactUniqueCount": 15183,
+  "conflictingRowsRemoved": 16,
+  "exactDuplicateRowsRemoved": 185,
+  "nearDuplicateGroups": 15035,
+  "crossSplitGroupOverlap": 0,
+  "rowsExcludedForHoldoutOrNearDuplicates": 57,
+  "sourceHashes": {
+    "phrasebank-kaggle-v5.zip": "e4167162611d92c6040b1070aa2f3cec02c4cf3a0b4fa5d66ea93029d92f3328",
+    "sent_train.csv.gz": "c115f15da883f27aebc370f312f9db376b533b3181df7e0cc43e56705d4e4c39",
+    "sent_valid.csv.gz": "f702c61b381f8d952f3f7ed267507ede330b4a47b46bfc714445c91793480e7d"
+  },
+  "splits": {
+    "train": {
+      "count": 10895,
+      "labels": {
+        "neutral": 6961,
+        "positive": 2387,
+        "negative": 1547
+      },
+      "sources": {
+        "twitter-financial-news": 7448,
+        "financial-phrasebank": 3447
+      },
+      "fingerprint": "8d63d64c225656832aac3172bfdcee2f35bcbfdab7bff9522702d671f5239154"
+    },
+    "dev": {
+      "count": 932,
+      "labels": {
+        "neutral": 598,
+        "positive": 191,
+        "negative": 143
+      },
+      "sources": {
+        "twitter-financial-news": 932
+      },
+      "fingerprint": "20ab71a1a8df024e29232085ed1259c415c40307dae8ee7b3f5d1acf6162141e"
+    },
+    "calibration": {
+      "count": 932,
+      "labels": {
+        "neutral": 609,
+        "positive": 190,
+        "negative": 133
+      },
+      "sources": {
+        "twitter-financial-news": 932
+      },
+      "fingerprint": "5ed8537383976c3bcf55ad27e2a5ac76bae44918643b7833e69329d92e7adbff"
+    },
+    "test": {
+      "count": 2367,
+      "labels": {
+        "negative": 345,
+        "positive": 471,
+        "neutral": 1551
+      },
+      "sources": {
+        "twitter-financial-news": 2367
+      },
+      "fingerprint": "63f3ecbbd2bb643216995a924c1d04ff222b1dfbed4f13acf03db6e5cc3106b8"
+    }
+  }
+}

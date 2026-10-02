@@ -14,6 +14,7 @@ data/*
 !data/sources.json
 !data/portfolio.json
 !data/training/
+!data/sentiment/
 .venv/
 __pycache__/
 *.pyc
