@@ -14,7 +14,6 @@ import { fetchSources, defaultSources, type Source } from "./sources";
 import { annotateNovelty } from "./novelty";
 import { ASSETS, PRESETS, runStress } from "./stress";
 import type { StressResult, StressDashboard, PreviewResult } from "../shared/intelligence";
-import { predictMarketFlow } from "./flow";
 import { documentSchema } from "./validation";
 
 export class ServiceError extends Error {
@@ -244,10 +243,6 @@ export class RiskService {
         position: Number(this.store.get("replayPosition") ?? 0),
         total: SCENARIOS.length,
       },
-      flow: predictMarketFlow(signals),
     };
-  }
-  marketFlow() {
-    return predictMarketFlow(this.store.signals(this.mode));
   }
 }
