@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchSources, gdeltSource, sources } from "../server/sources";
+import {
+  fetchSources,
+  gdeltSource,
+  presidentialWarSource,
+  sources,
+  yahooFinanceSource,
+} from "../server/sources";
 
 afterEach(() => vi.unstubAllGlobals());
 describe("source adapters", () => {
@@ -87,5 +93,43 @@ describe("source adapters", () => {
     const result = await fetchSources(sources);
     expect(result.documents).toHaveLength(0);
     expect(result.statuses.every((s) => s.status === "error")).toBe(true);
+  });
+  it("parses presidential and war geopolitical risk headlines", async () => {
+    const date = new Date().toUTCString();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          `<rss version="2.0"><channel><title>News</title><item><title>President signs executive order imposing 25% tariffs on steel &amp; defense items</title><link>https://whitehouse.example.gov/briefing</link><pubDate>${date}</pubDate></item></channel></rss>`,
+        ),
+      ),
+    );
+    const docs = await presidentialWarSource.fetch();
+    expect(docs).toHaveLength(1);
+    expect(docs[0]).toMatchObject({
+      text: "President signs executive order imposing 25% tariffs on steel & defense items",
+      sourceKind: "news",
+      sourceName: "Presidential & Geopolitical Risk",
+      sourceUrl: "https://whitehouse.example.gov/briefing",
+    });
+  });
+  it("parses Yahoo Finance stock market headlines", async () => {
+    const date = new Date().toUTCString();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          `<rss version="2.0"><channel><title>Yahoo</title><item><title>Microsoft &amp; Nvidia lead S&amp;P 500 rally as tech stocks surge</title><link>https://finance.yahoo.com/news/tech-rally</link><pubDate>${date}</pubDate></item></channel></rss>`,
+        ),
+      ),
+    );
+    const docs = await yahooFinanceSource.fetch();
+    expect(docs).toHaveLength(1);
+    expect(docs[0]).toMatchObject({
+      text: "Microsoft & Nvidia lead S&P 500 rally as tech stocks surge",
+      sourceKind: "news",
+      sourceName: "Yahoo Finance",
+      sourceUrl: "https://finance.yahoo.com/news/tech-rally",
+    });
   });
 });
