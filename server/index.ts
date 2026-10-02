@@ -11,11 +11,14 @@ const service = new RiskService(new RiskEngine(), store);
 const app = createApp(service);
 const port = Number(process.env.PORT ?? 3001);
 const server = app.listen(port, process.env.HOST ?? "127.0.0.1", () =>
-  console.log(`SignalDesk: http://127.0.0.1:${port}`),
+  console.log(`GoRisk: http://127.0.0.1:${port}`),
 );
 void service
   .initialize()
-  .then(() => console.log("Risk engine ready:", service.engine.info.model))
+  .then(async () => {
+    console.log("Risk engine ready:", service.engine.info.model);
+    if (service.mode === "live") await service.refresh().catch((error) => console.error("Initial feed refresh:", error.message));
+  })
   .catch((error) => {
     console.error("Startup failed:", error);
     process.exit(1);
