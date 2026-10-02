@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Sparkles, X } from "lucide-react";
+import { ArrowRight, Play, X } from "lucide-react";
 import type { PreviewResult } from "../../shared/types";
 import { api, money, percent, signed, tone } from "../lib/api";
 import { SignalCard } from "./SignalCard";
 
 const EXAMPLES = [
+  { label: "Bankruptcy", text: "apple goes bankrupt" },
   {
     label: "Mixed company news",
     text: "Apple reports record revenue and strong growth. Tesla misses earnings expectations as demand collapses.",
@@ -53,8 +54,8 @@ export function Sandbox({ close }: { close: () => void }) {
       <div className="sandbox-content">
         <div className="section-title">
           <div>
-            <span className="eyebrow">THE WHAT-IF SANDBOX</span>
-            <h2>One headline. A different picture.</h2>
+            <span className="eyebrow">PREVIEW · NO SAVED CHANGES</span>
+            <h2>Test a headline</h2>
           </div>
           <button
             className="icon-button"
@@ -104,8 +105,8 @@ export function Sandbox({ close }: { close: () => void }) {
           <div className="row between">
             <span className="small muted">Example prompts are fictional.</span>
             <button className="button dark" disabled={busy}>
-              <Sparkles size={16} />
-              {busy ? "Reading between the lines…" : "Run the what-if"}
+              <Play size={16} />
+              {busy ? "Analyzing…" : "Run analysis"}
             </button>
           </div>
         </form>
@@ -146,9 +147,14 @@ export function Sandbox({ close }: { close: () => void }) {
                   includes current signals and portfolio limits.
                 </p>
               </section>
-              <section className="panel mint">
+              <section className="panel subtle">
                 <span className="eyebrow">MODULE B</span>
                 <h3>Adverse scenario</h3>
+                <span className="tag">
+                  {result.signal.impact > 7
+                    ? "Meets automatic stress threshold"
+                    : "Below automatic stress threshold"}
+                </span>
                 <strong className="big-number">
                   {money(result.stress.pnl)}
                 </strong>

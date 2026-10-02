@@ -1,10 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  ArrowUpRight,
-  BrainCircuit,
-  CheckCircle2,
-  FlaskConical,
-} from "lucide-react";
+import { ArrowUpRight, FlaskConical } from "lucide-react";
 import type modelMetrics from "../../models/metrics.json";
 import { api, percent } from "../lib/api";
 
@@ -12,6 +7,7 @@ export function ModelLab({ openSandbox }: { openSandbox: () => void }) {
   const [metrics, setMetrics] = useState<typeof modelMetrics>();
   const [error, setError] = useState("");
   const [sort, setSort] = useState("Weakest first");
+  const [showAll, setShowAll] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     api<typeof modelMetrics>("model", undefined, controller.signal)
@@ -36,12 +32,11 @@ export function ModelLab({ openSandbox }: { openSandbox: () => void }) {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">
-            MODEL LAB · EVIDENCE BEFORE CONFIDENCE
-          </span>
-          <h1>Trained. Tested. Inspectable.</h1>
+          <span className="eyebrow">NLP MODELS · VALIDATION</span>
+          <h1>Model evaluation</h1>
           <p>
-            Two NLP models, clearly separated from the financial assumptions.
+            Inspect measured topic results and test financial sentiment on your
+            own headlines.
           </p>
         </div>
         <button className="button dark" onClick={openSandbox}>
@@ -74,7 +69,6 @@ export function ModelLab({ openSandbox }: { openSandbox: () => void }) {
         <section className="panel">
           <div className="section-title">
             <h2>From words to topics</h2>
-            <BrainCircuit size={22} />
           </div>
           <span className="tag positive">Trained for this project</span>
           <h3>TF-IDF + logistic regression</h3>
@@ -121,22 +115,11 @@ export function ModelLab({ openSandbox }: { openSandbox: () => void }) {
             FinBERT scores positive, negative and neutral financial tone. The
             engine uses P(positive) − P(negative), on a scale from −1 to +1.
           </p>
-          <div className="model-steps">
-            <div>
-              <CheckCircle2 size={17} />
-              <span>CPU inference with quantized model weights</span>
-            </div>
-            <div>
-              <CheckCircle2 size={17} />
-              <span>
-                Separate sentiment for clearly isolated company sentences
-              </span>
-            </div>
-            <div>
-              <CheckCircle2 size={17} />
-              <span>Explicitly labeled lexicon fallback when unavailable</span>
-            </div>
-          </div>
+          <p>
+            Short headlines receive a final period before inference. Company
+            sentences are scored separately when possible. The original text and
+            model probabilities remain visible in each signal.
+          </p>
           <p className="small muted">
             FinBERT was not trained here. The topic model's reported metrics do
             not apply to FinBERT. Mixed-company clauses and sarcasm remain
@@ -182,7 +165,7 @@ export function ModelLab({ openSandbox }: { openSandbox: () => void }) {
                 </tr>
               </thead>
               <tbody>
-                {classes.map((row) => (
+                {(showAll ? classes : classes.slice(0, 6)).map((row) => (
                   <tr key={row.label}>
                     <td>
                       <b>{row.label}</b>
@@ -201,11 +184,20 @@ export function ModelLab({ openSandbox }: { openSandbox: () => void }) {
               </tbody>
             </table>
           </div>
+          <button
+            className="text-button show-more"
+            onClick={() => setShowAll(!showAll)}
+            aria-expanded={showAll}
+          >
+            {showAll
+              ? "Show fewer topics"
+              : `Show all ${classes.length} topics`}
+          </button>
         </section>
         <aside className="stack">
-          <section className="panel mint">
-            <span className="eyebrow">UNCERTAINTY IS PART OF THE OUTPUT</span>
-            <h2>A review flag, not a guess.</h2>
+          <section className="panel subtle">
+            <span className="eyebrow">REVIEW THRESHOLD</span>
+            <h2>When to review</h2>
             <p>
               Topic confidence below {percent(metrics.reviewThreshold, 0)} is
               flagged for review. Explicit event cues can still supply an event
@@ -224,8 +216,8 @@ export function ModelLab({ openSandbox }: { openSandbox: () => void }) {
               choice.
             </p>
           </section>
-          <section className="panel">
-            <h3>Evaluation discipline</h3>
+          <details className="panel disclosure">
+            <summary>Training & evaluation method</summary>
             <ul className="evidence">
               <li>
                 Removed {metrics.removedTrainDuplicates.toLocaleString()}{" "}
@@ -245,11 +237,11 @@ export function ModelLab({ openSandbox }: { openSandbox: () => void }) {
               </li>
             </ul>
             <p className="small muted">{metrics.version}</p>
-          </section>
+          </details>
         </aside>
       </div>
-      <section className="panel">
-        <h2>Limits that matter</h2>
+      <details className="panel disclosure">
+        <summary>Model limitations & financial assumptions</summary>
         <ul className="evidence">
           {metrics.limitations.map((line) => (
             <li key={line}>{line}</li>
@@ -260,7 +252,7 @@ export function ModelLab({ openSandbox }: { openSandbox: () => void }) {
             market-loss predictions.
           </li>
         </ul>
-      </section>
+      </details>
     </>
   );
 }
