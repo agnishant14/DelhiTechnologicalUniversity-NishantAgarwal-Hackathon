@@ -7,6 +7,7 @@ import { documentSchema } from "./validation";
 import metrics from "../models/metrics.json";
 import { EVENTS } from "../shared/types";
 import { runStress } from "./stress";
+import { fetchTradingViewQuotes } from "./tradingview";
 export function createApp(service: RiskService) {
   const app = express();
   app.disable("x-powered-by");
@@ -38,6 +39,9 @@ export function createApp(service: RiskService) {
       engine: service.engine.info,
     }),
   );
+  app.get("/api/quotes", async (_req, res) => {
+    res.json(await fetchTradingViewQuotes());
+  });
   app.get("/api/dashboard", (_req, res) => res.json(service.dashboard()));
   app.get("/api/signals", (_req, res) => res.json(service.dashboard().signals));
   app.get("/api/model", (_req, res) => res.json(metrics));
