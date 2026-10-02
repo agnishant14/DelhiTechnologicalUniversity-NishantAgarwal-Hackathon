@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  ChevronDown,
   ExternalLink,
   Radio,
   RefreshCw,
@@ -194,7 +195,8 @@ export default function App() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search for a company, ticker or event..."
+              placeholder="Search for a company"
+              aria-label="Search for a company or ticker"
             />
             {search && (
               <button
@@ -222,6 +224,12 @@ export default function App() {
           >
             NA
           </div>
+          <ChevronDown
+            size={11}
+            color="#94a3b8"
+            style={{ marginLeft: -6, cursor: "pointer", opacity: 0.8 }}
+            aria-hidden="true"
+          />
         </div>
       </header>
 
