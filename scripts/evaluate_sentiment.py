@@ -7,13 +7,12 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from peft import PeftModel
 from scipy.special import softmax
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from export_sentiment import predict_onnx, session
 from prepare_sentiment import LABELS, ROOT, SEED, prepare
-from train_sentiment import Corpus, metrics, model_directory, predict
+from train_sentiment import Corpus, load_checkpoint, metrics, model_directory, predict
 
 
 def accuracy_interval(rows, labels, baseline, trained):
@@ -44,13 +43,19 @@ def evaluate(args):
         checksum = hashlib.file_digest(stream, "sha256").hexdigest()
     if checksum != exported["onnxSha256"]:
         raise ValueError("Model weights differ from the validated export")
-    tokenizer = AutoTokenizer.from_pretrained(model_directory())
-    corpus = Corpus(test, tokenizer, settings["maxLength"])
+    baseline_tokenizer = AutoTokenizer.from_pretrained(model_directory())
+    baseline_corpus = Corpus(test, baseline_tokenizer, settings["maxLength"])
     labels = np.array([r["label"] for r in test])
     device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
     model = AutoModelForSequenceClassification.from_pretrained(model_directory(), attn_implementation="eager").to(device)
-    baseline = predict(model, corpus, device, 24)
-    model = PeftModel.from_pretrained(model, args.run / "adapter").to(device)
+    baseline = predict(model, baseline_corpus, device, 24)
+    model.cpu()
+    del model
+    if device == "mps":
+        torch.mps.empty_cache()
+    tokenizer = AutoTokenizer.from_pretrained(model_directory(settings.get("backbone", "finbert")))
+    corpus = Corpus(test, tokenizer, settings["maxLength"])
+    model = load_checkpoint(args.run, device)
     trained = predict(model, corpus, device, 24) / settings["temperature"]
     model.cpu()
     del model
@@ -61,12 +66,12 @@ def evaluate(args):
     deployed = predict_onnx(runtime, corpus)
     elapsed = time.perf_counter() - started
     report = {
-        "version": settings["version"], "labelOrder": LABELS,
+        "version": exported.get("version", settings["version"]), "labelOrder": LABELS,
         "artifact": {"sha256": checksum, "precision": "fp16", "bytes": weights.stat().st_size},
         "selection": {"run": args.run.name, "epoch": settings["selectedEpoch"],
                       "criterion": "development metrics and fixed bankruptcy/company regression checks; test not used for selection"},
         "test": splits["splits"]["test"],
-        "preprocessing": "Remove URLs, normalize whitespace, add terminal punctuation; first 128 tokens for both models",
+        "preprocessing": f"Remove URLs, normalize whitespace, add terminal punctuation; first {settings['maxLength']} tokens with each model's tokenizer",
         "labelRule": "highest-probability class; sentiment score remains P(positive) - P(negative)",
         "baseline": metrics(baseline, labels), "fineTuned": metrics(trained, labels),
         "deployed": metrics(deployed, labels),
@@ -81,6 +86,13 @@ def evaluate(args):
                    "Policy-prefixed metrics describe the previous +/-0.15 label rule; deployed labels use argmax",
                    "Topic, event, severity and portfolio-loss accuracy are not measured here"],
     }
+    if args.previous:
+        previous_rows = [json.loads(line) for line in gzip.decompress(args.previous.read_bytes()).decode().splitlines()]
+        if [r["id"] for r in previous_rows] != [r["id"] for r in test]:
+            raise ValueError("Previous predictions do not match this benchmark")
+        previous = np.log(np.clip([r["deployed"] for r in previous_rows], 1e-12, 1))
+        report["previousRelease"] = metrics(previous, labels)
+        report["improvementOverPrevious"] = accuracy_interval(test, labels, previous, deployed)
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / "evaluation.json").write_text(json.dumps(report, indent=2) + "\n")
     probabilities = [softmax(x, axis=1) for x in [baseline, trained, deployed]]
@@ -105,4 +117,5 @@ if __name__ == "__main__":
     parser.add_argument("--run", required=True, type=Path)
     parser.add_argument("--model", type=Path, default=ROOT / ".cache/gorisk-sentiment-v2")
     parser.add_argument("--output", type=Path, default=ROOT / "models/sentiment")
+    parser.add_argument("--previous", type=Path)
     evaluate(parser.parse_args())
