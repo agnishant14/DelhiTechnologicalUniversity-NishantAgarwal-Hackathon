@@ -1,4 +1,5 @@
 import argparse
+import gc
 import json
 import math
 import random
@@ -202,6 +203,8 @@ def train(args):
             count += 1
             if step % 50 == 0 or step == steps:
                 report({"stage": "batch", "epoch": epoch + 1, "step": step, "steps": steps, "loss": round(total / count, 5)})
+                if device == "mps":
+                    torch.mps.empty_cache()
         dev_logits = predict(model, corpora["dev"], device, args.batch_size)
         probe_predictions = predict(model, probes, device, args.batch_size).argmax(1)
         failures = [{"text": text, "expected": LABELS[label], "predicted": LABELS[int(pred)]}
@@ -223,7 +226,8 @@ def train(args):
         if stale >= 2 and selected_epoch:
             break
     model.cpu()
-    del model, optimizer
+    del model, optimizer, scheduler, scaler, logits, losses, loss
+    gc.collect()
     if device == "mps":
         torch.mps.empty_cache()
     if not selected_epoch:
