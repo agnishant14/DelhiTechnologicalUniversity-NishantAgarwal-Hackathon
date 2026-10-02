@@ -1,5 +1,6 @@
 import type { CompanySentiment, TopicPrediction } from "./intelligence";
 
+export const ANALYSIS_VERSION = "2.1";
 export const STOCKS = [
   {
     ticker: "AAPL",
@@ -136,6 +137,9 @@ export interface Document {
   isSample?: boolean;
 }
 export interface Signal extends Document {
+  analysisVersion?: string;
+  modelInput?: string;
+  creditContext?: "reported" | "uncertain" | "negated or resolved";
   topic?: TopicPrediction;
   companySentiments?: CompanySentiment[];
   clusterId?: string;
@@ -200,4 +204,3 @@ export interface Dashboard {
   };
   replay: { position: number; total: number };
 }
-

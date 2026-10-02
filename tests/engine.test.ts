@@ -4,10 +4,75 @@ import {
   classifyEvent,
   detectTickers,
   fallbackSentiment,
+  modelInput,
 } from "../server/engine";
 import { documentSchema } from "../server/validation";
 
 describe("risk signals", () => {
+  it("normalizes unpunctuated headlines and isolated company sentences for inference", async () => {
+    const inputs: string[] = [];
+    const engine = new RiskEngine(async (text) => {
+      inputs.push(text);
+      return [
+        { label: "positive", score: 0.02 },
+        { label: "negative", score: 0.73 },
+        { label: "neutral", score: 0.25 },
+      ];
+    });
+    const signal = await engine.analyze({
+      text: "apple goes bankrupt while Tesla reports strong profits",
+      sourceKind: "manual",
+      sourceName: "Test",
+      publishedAt: new Date().toISOString(),
+    });
+    expect(inputs).toContain("apple goes bankrupt.");
+    expect(inputs).toContain("Tesla reports strong profits.");
+    expect(signal.text).toBe(
+      "apple goes bankrupt while Tesla reports strong profits",
+    );
+    expect(signal.modelInput).toBe(`${signal.text}.`);
+    expect(modelInput('Apple says "strong profits."')).toBe(
+      'Apple says "strong profits."',
+    );
+    expect(modelInput("Apple goes bankrupt!")).toBe("Apple goes bankrupt!");
+  });
+  it("distinguishes reported distress from denials, recovery and speculation", () => {
+    for (const text of [
+      "Apple is not bankrupt",
+      "Apple avoids bankruptcy",
+      "Apple denies bankruptcy rumors",
+      "Bankruptcy rumors were denied by Apple",
+      "Tesla emerges from bankruptcy",
+      "Apple has no risk of default",
+      "Microsoft is no longer insolvent",
+    ]) {
+      expect(classifyEvent(text, -0.8), text).toMatchObject({
+        event: "Credit Event",
+        creditContext: "negated or resolved",
+        impact: 3,
+      });
+    }
+    for (const text of [
+      "Apple may go bankrupt",
+      "If Tesla defaults on its debt",
+      "Apple faces bankruptcy rumors",
+    ]) {
+      expect(classifyEvent(text, -0.8), text).toMatchObject({
+        creditContext: "uncertain",
+        impact: 7,
+      });
+    }
+    for (const text of [
+      "apple goes bankrupt",
+      "Microsoft defaults on its debt",
+      "Apple denies bankruptcy rumors but Tesla goes bankrupt",
+    ]) {
+      const result = classifyEvent(text, -0.8);
+      expect(result.creditContext, text).toBe("reported");
+      expect(result.impact, text).toBeGreaterThan(7);
+    }
+    expect(fallbackSentiment("apple goes bankrupt")).toBeLessThan(-0.15);
+  });
   it("matches company names and tickers without substring false positives", () => {
     expect(detectTickers("Apple and $NVDA beat forecasts.")).toEqual([
       "AAPL",
