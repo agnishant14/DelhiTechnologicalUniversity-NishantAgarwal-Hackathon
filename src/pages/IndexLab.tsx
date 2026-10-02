@@ -12,7 +12,6 @@ import {
 } from "recharts";
 import type { Dashboard, Ticker } from "../../shared/types";
 import { percent, signed, tone } from "../lib/api";
-import { StockLogo } from "../StockLogo";
 import { SignalCard } from "../components/SignalCard";
 
 export function IndexLab({ data }: { data: Dashboard }) {
@@ -221,7 +220,6 @@ export function IndexLab({ data }: { data: Dashboard }) {
                         className="stock-button"
                         onClick={() => setSelected(h.ticker)}
                       >
-                        <StockLogo ticker={h.ticker} size={30} />
                         <span>
                           <b>{h.ticker}</b>
                           <small>{h.name}</small>

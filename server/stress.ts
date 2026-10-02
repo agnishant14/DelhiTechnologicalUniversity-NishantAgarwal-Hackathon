@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import portfolio from "../data/portfolio.json";
-import type { Asset, Shocks, StressResult } from "../shared/intelligence";
+import type { Asset, Shocks, StressResult } from "../shared/types";
 import type { EventType, Mode, Signal } from "../shared/types";
 
 export const ASSETS = portfolio as Asset[];

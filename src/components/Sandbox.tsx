@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowRight, Sparkles, X } from "lucide-react";
-import type { PreviewResult } from "../../shared/intelligence";
+import type { PreviewResult } from "../../shared/types";
 import { api, money, percent, signed, tone } from "../lib/api";
 import { SignalCard } from "./SignalCard";
 

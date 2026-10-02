@@ -7,7 +7,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { Dashboard } from "../shared/types";
-import type { StressDashboard } from "../shared/intelligence";
+import type { StressDashboard } from "../shared/types";
 import { api, ago } from "./lib/api";
 import { Overview } from "./pages/Overview";
 import { IndexLab } from "./pages/IndexLab";

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
-import type { TopicPrediction } from "../shared/intelligence";
+import type { TopicPrediction } from "../shared/types";
 
 interface Artifact {
   version: string;

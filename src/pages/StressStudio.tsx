@@ -19,7 +19,7 @@ import type {
   Shocks,
   StressDashboard,
   StressResult,
-} from "../../shared/intelligence";
+} from "../../shared/types";
 import { ago, api, money, signed, tone } from "../lib/api";
 
 const CONTROLS: {

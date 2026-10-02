@@ -8,7 +8,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { Dashboard, Ticker } from "../../shared/types";
-import type { StressDashboard } from "../../shared/intelligence";
+import type { StressDashboard } from "../../shared/types";
 import { money, signed, tone } from "../lib/api";
 import { SignalCard } from "../components/SignalCard";
 

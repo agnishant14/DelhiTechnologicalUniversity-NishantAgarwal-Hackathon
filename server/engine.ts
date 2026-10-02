@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { predictTopic } from "./topic";
-import type { CompanySentiment, TopicPrediction } from "../shared/intelligence";
+import type { CompanySentiment, TopicPrediction } from "../shared/types";
 import {
   ANALYSIS_VERSION,
   STOCKS,

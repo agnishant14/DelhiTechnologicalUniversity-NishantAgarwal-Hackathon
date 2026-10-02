@@ -24,7 +24,7 @@ import type {
   StressResult,
   StressDashboard,
   PreviewResult,
-} from "../shared/intelligence";
+} from "../shared/types";
 import { documentSchema } from "./validation";
 
 export class ServiceError extends Error {

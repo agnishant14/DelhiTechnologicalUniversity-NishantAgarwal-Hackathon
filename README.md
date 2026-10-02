@@ -83,7 +83,7 @@ The training corpus is [`zeroshot/twitter-financial-news-topic`](https://hugging
 
 Live sources require no API keys. Google and Yahoo provide headline text; Hacker News provides community-submitted story titles, not X/Twitter posts. The HN adapter scans up to 100 stories from the last day for supported companies or financial terms. Google and Yahoo each return up to 20 headlines. GDELT is optional and uses observation time as a publication proxy. Source failures and empty responses remain visible. Feed coverage is partial and uneven.
 
-Live responses are persisted locally and downloadable with **Export JSON**, including the active inputs, weights, stress history, asset book and model metrics. Save that export with the submission if a recorded demo uses a particular live run. Runtime databases, model caches and credentials are excluded from Git. Public feed content and company logos retain their owners' rights; no confidential client data is used.
+Live responses are persisted locally and downloadable with **Export JSON**, including the active inputs, weights, stress history, asset book and model metrics. Save that export with the submission if a recorded demo uses a particular live run. Runtime databases, model caches and credentials are excluded from Git. Public feed content retains its owners' rights; no confidential client data is used.
 
 ## 4. Quickstart & Installation
 
