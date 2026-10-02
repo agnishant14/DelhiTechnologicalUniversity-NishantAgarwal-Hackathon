@@ -35,6 +35,25 @@ describe("risk signals", () => {
       'Apple says "strong profits."',
     );
     expect(modelInput("Apple goes bankrupt!")).toBe("Apple goes bankrupt!");
+    expect(modelInput("Apple reports profits https://example.com/news")).toBe(
+      "Apple reports profits.",
+    );
+  });
+  it("uses the most likely class even when the directional score exceeds the old threshold", async () => {
+    const engine = new RiskEngine(async () => [
+      { label: "positive", score: 0.3 },
+      { label: "negative", score: 0.02 },
+      { label: "neutral", score: 0.68 },
+    ]);
+    const signal = await engine.analyze({
+      text: "Apple publishes an update",
+      sourceKind: "manual",
+      sourceName: "Test",
+      publishedAt: new Date().toISOString(),
+    });
+    expect(signal.sentimentLabel).toBe("neutral");
+    expect(signal.sentiment).toBe(0.28);
+    expect(signal.analysisVersion).toBe(engine.analysisVersion);
   });
   it("distinguishes reported distress from denials, recovery and speculation", () => {
     for (const text of [

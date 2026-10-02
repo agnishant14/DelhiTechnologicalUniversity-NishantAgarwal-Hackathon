@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import {
-  ANALYSIS_VERSION,
   type Dashboard,
   type Document,
   type Mode,
@@ -100,7 +99,7 @@ export class RiskService {
   }
   private async refreshAnalysis() {
     if (this.engine.status !== "ready") return;
-    const version = `${ANALYSIS_VERSION}:${this.engine.info.model}`;
+    const version = this.engine.analysisVersion;
     for (const mode of ["demo", "live"] as const) {
       const saved = this.store.signals(mode);
       if (saved.every((s) => s.analysisVersion === version)) continue;

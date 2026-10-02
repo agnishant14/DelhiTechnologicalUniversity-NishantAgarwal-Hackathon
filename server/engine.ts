@@ -18,7 +18,10 @@ const round = (n: number) => Math.round(n * 1000) / 1000;
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export function modelInput(text: string) {
-  const normalized = text.replace(/\s+/g, " ").trim();
+  const normalized = text
+    .replace(/https?:\/\/\S+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   return /[.!?]["'”’)]*$/.test(normalized) ? normalized : `${normalized}.`;
 }
 
@@ -294,6 +297,7 @@ export class RiskEngine {
   status: "loading" | "ready" | "fallback" = "loading";
   error?: string;
   private infer?: Inference;
+  private modelVersion = `finbert-${MODEL_REVISION}-argmax-v1`;
   constructor(inference?: Inference) {
     if (inference) {
       this.infer = inference;
@@ -309,8 +313,12 @@ export class RiskEngine {
           : this.status === "loading"
             ? "Loading FinBERT"
             : "Lexicon fallback",
+      version: this.status === "ready" ? this.modelVersion : "lexicon-v1",
       ...(this.error ? { error: this.error } : {}),
     };
+  }
+  get analysisVersion() {
+    return `${ANALYSIS_VERSION}:${this.info.model}:${this.info.version}`;
   }
   async initialize() {
     if (this.infer) return;
@@ -355,6 +363,12 @@ export class RiskEngine {
     let model: Signal["model"] = "Lexicon fallback";
     let confidence: number | null = null;
     let sentiment = fallbackSentiment(text);
+    let sentimentLabel: Signal["sentimentLabel"] =
+      sentiment > 0.15
+        ? "positive"
+        : sentiment < -0.15
+          ? "negative"
+          : "neutral";
     if (this.infer) {
       const scores = await this.infer(modelInput(text));
       const score = (label: string) =>
@@ -370,6 +384,12 @@ export class RiskEngine {
         neutral: round(neu!),
       };
       sentiment = round(pos! - neg!);
+      sentimentLabel =
+        pos! >= neg! && pos! >= neu!
+          ? "positive"
+          : neg! >= neu!
+            ? "negative"
+            : "neutral";
       confidence = round(Math.max(pos!, neg!, neu!));
       model = "FinBERT";
     }
@@ -416,7 +436,7 @@ export class RiskEngine {
     return {
       ...doc,
       text,
-      analysisVersion: `${ANALYSIS_VERSION}:${model}`,
+      analysisVersion: this.analysisVersion,
       ...(model === "FinBERT" ? { modelInput: modelInput(text) } : {}),
       id: signalId(text, mode),
       mode,
@@ -424,12 +444,7 @@ export class RiskEngine {
       topic,
       companySentiments,
       sentiment,
-      sentimentLabel:
-        sentiment > 0.15
-          ? "positive"
-          : sentiment < -0.15
-            ? "negative"
-            : "neutral",
+      sentimentLabel,
       ...classification,
       confidence,
       model,
@@ -437,11 +452,11 @@ export class RiskEngine {
       evidence: [
         ...classification.evidence,
         model === "FinBERT"
-          ? "Sentiment = P(positive) − P(negative), using the first 512 tokens."
+          ? "Label = highest-probability class. Sentiment = P(positive) − P(negative), using the first 512 tokens."
           : "Sentiment uses a small negation-aware word lexicon; confidence is not calibrated.",
         ...(model === "FinBERT" && modelInput(text) !== text
           ? [
-              "A final period was added for model inference; original source text is preserved.",
+              "Inference uses URL-free text with normalized spacing and terminal punctuation; original source text is preserved.",
             ]
           : []),
         tickers.length
