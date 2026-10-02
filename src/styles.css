@@ -1869,49 +1869,68 @@ dialog::backdrop {
 }
 
 .signal-card.compact {
-  padding: 12px 14px;
-  gap: 6px;
-  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  gap: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
+  transition: all 0.15s ease;
+}
+
+.signal-card.compact:last-child {
+  margin-bottom: 0;
+}
+
+.signal-card.compact:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
 }
 
 .signal-card h3 {
-  font-size: 14px;
+  font-size: 14.5px;
   font-weight: 600;
   line-height: 1.45;
   color: var(--text-main);
-  margin: 0;
+  margin: 2px 0;
+  letter-spacing: -0.015em;
 }
 
 .signal-card.compact h3 {
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.4;
+  margin: 1px 0;
 }
 
 .impact {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
+  padding: 3px 8px;
   border-radius: var(--radius-pill);
   font-size: 11px;
   font-weight: 700;
-  background: #f1f5f9;
+  background: #ffffff;
   color: var(--text-main);
   border: 1px solid var(--line);
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .impact .impact-label {
   font-size: 9.5px;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   color: var(--text-muted);
 }
 
 .impact b {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--text-main);
 }
