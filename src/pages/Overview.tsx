@@ -5,6 +5,7 @@ import {
   Code2,
   Database,
   Download,
+  ExternalLink,
   Eye,
   Globe2,
   Play,
@@ -26,7 +27,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { Dashboard, Ticker } from "../../shared/types";
+import type { Dashboard, QuotesPayload, Ticker } from "../../shared/types";
 import type { StressDashboard } from "../../shared/types";
 import { money, signed, sentimentTone } from "../lib/api";
 import { SignalCard } from "../components/SignalCard";
@@ -46,6 +47,8 @@ interface RadarStockConfig {
   name: string;
   price: number;
   delta: number;
+  symbol?: string;
+  updatedAt?: string;
   history: { time: string; price: number }[];
 }
 
@@ -53,45 +56,53 @@ const DEFAULT_RADAR: RadarStockConfig[] = [
   {
     ticker: "NVDA",
     name: "NVIDIA Corp.",
-    price: 128.4,
-    delta: 2.84,
+    price: 230.86,
+    delta: 1.09,
+    symbol: "NASDAQ:NVDA",
     history: [
-      { time: "Apr", price: 112.5 },
-      { time: "May", price: 121.8 },
-      { time: "Jun", price: 128.4 },
+      { time: "3M", price: 197.15 },
+      { time: "2M", price: 206.96 },
+      { time: "1M", price: 216.75 },
+      { time: "Now", price: 230.86 },
     ],
   },
   {
     ticker: "AAPL",
     name: "Apple Inc.",
-    price: 228.1,
-    delta: -0.96,
+    price: 330.32,
+    delta: -0.81,
+    symbol: "NASDAQ:AAPL",
     history: [
-      { time: "Apr", price: 236.0 },
-      { time: "May", price: 231.5 },
-      { time: "Jun", price: 228.1 },
+      { time: "3M", price: 294.12 },
+      { time: "2M", price: 305.56 },
+      { time: "1M", price: 317.0 },
+      { time: "Now", price: 330.32 },
     ],
   },
   {
     ticker: "MSFT",
     name: "Microsoft Corp.",
-    price: 448.2,
-    delta: 1.45,
+    price: 512.8,
+    delta: -0.02,
+    symbol: "NASDAQ:MSFT",
     history: [
-      { time: "Apr", price: 422.0 },
-      { time: "May", price: 436.5 },
-      { time: "Jun", price: 448.2 },
+      { time: "3M", price: 384.48 },
+      { time: "2M", price: 441.0 },
+      { time: "1M", price: 497.52 },
+      { time: "Now", price: 512.8 },
     ],
   },
   {
     ticker: "META",
     name: "Meta Platforms",
-    price: 576.8,
-    delta: -1.82,
+    price: 725.93,
+    delta: 0.1,
+    symbol: "NASDAQ:META",
     history: [
-      { time: "Apr", price: 598.0 },
-      { time: "May", price: 585.0 },
-      { time: "Jun", price: 576.8 },
+      { time: "3M", price: 607.89 },
+      { time: "2M", price: 583.0 },
+      { time: "1M", price: 558.35 },
+      { time: "Now", price: 725.93 },
     ],
   },
 ];
@@ -99,6 +110,7 @@ const DEFAULT_RADAR: RadarStockConfig[] = [
 export function Overview({
   data,
   stress,
+  quotes,
   navigate,
   openSandbox,
   selectTicker,
@@ -108,6 +120,7 @@ export function Overview({
 }: {
   data: Dashboard;
   stress?: StressDashboard;
+  quotes?: QuotesPayload;
   navigate: (page: string) => void;
   openSandbox: () => void;
   selectTicker: (ticker: Ticker) => void;
@@ -132,18 +145,28 @@ export function Overview({
   const latestStress = stress?.history[0];
 
   const radarList = DEFAULT_RADAR.map((item) => {
+    const q = quotes?.stocks[item.ticker];
     const holding = data.holdings.find((h) => h.ticker === item.ticker);
-    if (!holding) return item;
-    const sentimentShift = holding.sentiment * 3.5;
-    const currentDelta = item.delta + sentimentShift;
+    const sentimentShift = (holding?.sentiment ?? 0) * 0.5;
+    const basePrice = q?.price ?? item.price;
+    const baseDelta = q?.changePct ?? item.delta;
+    const currentDelta = baseDelta + sentimentShift;
+    const baseHistory = q?.history ?? item.history;
+
     return {
       ...item,
-      delta: currentDelta,
-      history: item.history.map((h, i) =>
-        i === 2
-          ? { ...h, price: item.price * (1 + currentDelta / 100) }
-          : h,
+      price: basePrice,
+      delta: Number(currentDelta.toFixed(2)),
+      history: baseHistory.map((h, i) =>
+        i === baseHistory.length - 1 ? { ...h, price: basePrice } : h,
       ),
+      symbol: q?.symbol ?? item.symbol ?? `NASDAQ:${item.ticker}`,
+      updatedAt: q?.updatedAt
+        ? new Date(q.updatedAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "Live",
     };
   });
 
@@ -373,7 +396,26 @@ export function Overview({
       {/* Middle Section: Investment Radar (4 Cards) */}
       <section className="investment-radar-section">
         <div className="radar-header-row">
-          <h3>Investment radar</h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <h3>Investment radar</h3>
+            <span
+              className="tag"
+              style={{
+                fontSize: 10.5,
+                fontWeight: 600,
+                color: "#2563eb",
+                background: "#eff6ff",
+                borderColor: "#bfdbfe",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+              title="Real-time stock quotes fetched from TradingView"
+            >
+              <span className="live-status-dot" style={{ width: 6, height: 6 }} />
+              TradingView Live
+            </span>
+          </div>
           <div style={{ display: "flex", gap: 8 }}>
             <span className="dropdown-pill">
               Edit list <ChevronDown size={12} />
@@ -409,7 +451,7 @@ export function Overview({
                             marginRight: 4,
                           }}
                         />
-                        Updated: 10:36am
+                        Updated: {item.updatedAt ?? "Live"}
                       </span>
                     </div>
                   </div>
@@ -511,15 +553,21 @@ export function Overview({
                     <span>Notifications</span>
                   </div>
 
-                  <button
+                  <a
                     className="btn-link-advanced"
-                    onClick={() => {
-                      selectTicker(item.ticker);
-                      navigate("index");
+                    href={`https://www.tradingview.com/symbols/${item.symbol || item.ticker}/`}
+                    target="_blank"
+                    rel="noreferrer"
+                    title={`Open ${item.ticker} live chart on TradingView`}
+                    style={{
+                      textDecoration: "none",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
-                    Advanced chart
-                  </button>
+                    TradingView <ExternalLink size={11} />
+                  </a>
                 </div>
               </div>
             );
@@ -636,34 +684,83 @@ export function Overview({
         <div className="section-title">
           <div>
             <span className="eyebrow">20 S&amp;P CONSTITUENTS · MOCK INDEX</span>
-            <h2>Company sentiment</h2>
+            <h2>Company sentiment &amp; Market prices</h2>
           </div>
           <span className="small muted">
-            Select a company to follow its evidence
+            Real-time TradingView quotes and AI surveillance sentiment
           </span>
         </div>
         <div className="stock-heatmap">
-          {data.holdings.map((h) => (
-            <button
-              key={h.ticker}
-              className={`heat-cell ${sentimentTone(h.sentiment)}`}
-              onClick={() => {
-                selectTicker(h.ticker);
-                navigate("index");
-              }}
-              title={`${h.name}: ${h.signalCount} eligible signals`}
-            >
-              <b>{h.ticker}</b>
-              <span>{h.signalCount ? signed(h.sentiment) : "No signal"}</span>
-              <div className="heat-bar">
-                <i
+          {data.holdings.map((h) => {
+            const q = quotes?.stocks[h.ticker];
+            return (
+              <button
+                key={h.ticker}
+                className={`heat-cell ${sentimentTone(h.sentiment)}`}
+                onClick={() => {
+                  selectTicker(h.ticker);
+                  navigate("index");
+                }}
+                title={`${h.name}: ${h.signalCount} signals${q ? ` · $${q.price.toFixed(2)} (${q.changePct >= 0 ? "+" : ""}${q.changePct}%)` : ""}`}
+              >
+                <div
                   style={{
-                    width: `${Math.max(3, Math.abs(h.sentiment) * 100)}%`,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "baseline",
                   }}
-                />
-              </div>
-            </button>
-          ))}
+                >
+                  <b>{h.ticker}</b>
+                  {q && (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 750,
+                        color: "var(--text-main)",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      ${q.price.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    margin: "2px 0 6px",
+                  }}
+                >
+                  <span style={{ margin: 0, fontSize: 10.5 }}>
+                    {h.signalCount ? signed(h.sentiment) : "No signal"}
+                  </span>
+                  {q && (
+                    <span
+                      style={{
+                        margin: 0,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color:
+                          q.changePct >= 0 ? "var(--green)" : "var(--red)",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {q.changePct >= 0 ? "+" : ""}
+                      {q.changePct}%
+                    </span>
+                  )}
+                </div>
+                <div className="heat-bar">
+                  <i
+                    style={{
+                      width: `${Math.max(3, Math.abs(h.sentiment) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </button>
+            );
+          })}
         </div>
       </section>
     </>
