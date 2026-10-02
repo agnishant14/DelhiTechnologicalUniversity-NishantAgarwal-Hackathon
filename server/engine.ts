@@ -55,7 +55,7 @@ const RULES: { event: EventType; base: number; pattern: RegExp }[] = [
     event: "Geopolitical",
     base: 6,
     pattern:
-      /\b(war|invasion|sanctions?|military|geopolitical|tariffs?|trade conflict|export restrictions?|export ban)\b/gi,
+      /\b(war|invasion|sanctions?|military|geopolitical|tariffs?|trade conflict|trade war|export restrictions?|export ban|executive order|White House|President|Pentagon|national security|missile|embargo|conflict)\b/gi,
   },
   {
     event: "Regulatory",
