@@ -121,6 +121,9 @@ def train(args):
     torch.manual_seed(SEED)
     torch.set_num_threads(4)
     device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
+    if args.mixed_precision and device == "cpu":
+        raise ValueError("Mixed precision training requires MPS or CUDA")
+    scaler = torch.amp.GradScaler(device, enabled=args.mixed_precision)
     rows, splits = prepare()
     directory = model_directory(args.backbone)
     base_name, revision, _ = BACKBONES[args.backbone]
@@ -181,15 +184,20 @@ def train(args):
         for step, (tokens, target, source_weight) in enumerate(corpora["train"].batches(args.batch_size, epoch), 1):
             if (step - 1) % args.accumulation == 0:
                 optimizer.zero_grad(set_to_none=True)
-            logits = model(**tokens.to(device)).logits
-            losses = torch.nn.functional.cross_entropy(logits, target.to(device), weight=class_weights, reduction="none")
-            loss = (losses * source_weight.to(device)).mean()
+            with torch.autocast(device, dtype=torch.float16, enabled=args.mixed_precision):
+                logits = model(**tokens.to(device)).logits
+                losses = torch.nn.functional.cross_entropy(logits, target.to(device), weight=class_weights, reduction="none")
+                loss = (losses * source_weight.to(device)).mean()
             group_size = min(args.accumulation, steps - ((step - 1) // args.accumulation) * args.accumulation)
-            (loss / group_size).backward()
+            scaler.scale(loss / group_size).backward()
             if step % args.accumulation == 0 or step == steps:
+                scaler.unscale_(optimizer)
                 torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-                optimizer.step()
-                scheduler.step()
+                scale = scaler.get_scale()
+                scaler.step(optimizer)
+                scaler.update()
+                if scaler.get_scale() >= scale:
+                    scheduler.step()
             total += loss.item()
             count += 1
             if step % 50 == 0 or step == steps:
@@ -238,6 +246,7 @@ def train(args):
         "backbone": args.backbone,
         "seed": SEED, "device": device, "rank": args.rank, "layers": args.layers,
         "method": args.method, "headLearningRate": head_lr, "gradientAccumulation": args.accumulation,
+        "mixedPrecision": args.mixed_precision,
         "requireRegressions": args.require_regressions,
         "learningRate": args.learning_rate, "batchSize": args.batch_size, "maxLength": args.max_length,
         "trainableParameters": trainable, "classWeights": class_weights.cpu().tolist(),
@@ -267,6 +276,7 @@ if __name__ == "__main__":
     parser.add_argument("--accumulation", type=int, default=1)
     parser.add_argument("--phrasebank-weight", type=float, default=.6)
     parser.add_argument("--require-regressions", action="store_true")
+    parser.add_argument("--mixed-precision", action="store_true")
     parser.add_argument("--batch-size", type=int, default=24)
     parser.add_argument("--max-length", type=int, default=128)
     parser.add_argument("--class-weight-power", type=float, default=.5)
