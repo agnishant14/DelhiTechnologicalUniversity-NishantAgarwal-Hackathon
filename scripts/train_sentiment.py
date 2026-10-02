@@ -18,6 +18,10 @@ from prepare_sentiment import LABELS, ROOT, SEED, model_text, prepare
 
 BASE = "ProsusAI/finbert"
 REVISION = "4556d13015211d73dccd3fdd39d39232506f3e43"
+BACKBONES = {
+    "finbert": (BASE, REVISION, "finbert-base"),
+    "deberta-small": ("microsoft/deberta-v3-small", "a36c739020e01763fe789b4b85e2df55d6180012", "deberta-v3-small"),
+}
 
 REGRESSIONS = [
     ("apple goes bankrupt", 1), ("Apple goes bankrupt.", 1),
@@ -30,11 +34,12 @@ REGRESSIONS = [
 ]
 
 
-def model_directory():
-    directory = ROOT / ".cache/finbert-base"
+def model_directory(backbone="finbert"):
+    name, revision, cache = BACKBONES[backbone]
+    directory = ROOT / ".cache" / cache
     if not (directory / "pytorch_model.bin").exists():
-        snapshot_download(BASE, revision=REVISION, local_dir=directory,
-                          allow_patterns=["pytorch_model.bin", "*.json", "vocab.txt", "README.md"])
+        snapshot_download(name, revision=revision, local_dir=directory,
+                          allow_patterns=["pytorch_model.bin", "*.json", "vocab.txt", "spm.model", "README.md"])
     return directory
 
 
@@ -102,7 +107,7 @@ def load_checkpoint(run, device="cpu"):
     settings = json.loads((run / "training.json").read_text())
     if settings.get("method", "lora") == "full":
         return AutoModelForSequenceClassification.from_pretrained(run / "checkpoint", attn_implementation="eager").to(device)
-    base = AutoModelForSequenceClassification.from_pretrained(model_directory(), attn_implementation="eager")
+    base = AutoModelForSequenceClassification.from_pretrained(model_directory(settings.get("backbone", "finbert")), attn_implementation="eager")
     return PeftModel.from_pretrained(base, run / "adapter").to(device)
 
 
@@ -117,14 +122,20 @@ def train(args):
     torch.set_num_threads(4)
     device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
     rows, splits = prepare()
-    tokenizer = AutoTokenizer.from_pretrained(model_directory())
+    directory = model_directory(args.backbone)
+    base_name, revision, _ = BACKBONES[args.backbone]
+    tokenizer = AutoTokenizer.from_pretrained(directory)
     corpora = {s: Corpus([r for r in rows if r["split"] == s], tokenizer, args.max_length, args.phrasebank_weight)
                for s in ["train", "dev", "calibration"]}
     probes = Corpus([{"text": text, "label": label, "source": "regression"}
                      for text, label in REGRESSIONS], tokenizer, args.max_length)
     labels = {s: np.array([r["label"] for r in corpus.rows]) for s, corpus in corpora.items()}
-    model = AutoModelForSequenceClassification.from_pretrained(model_directory(), attn_implementation="eager").to(device)
-    model.config._name_or_path = BASE
+    model = AutoModelForSequenceClassification.from_pretrained(directory, attn_implementation="eager",
+        num_labels=3, id2label=dict(enumerate(LABELS)), label2id={name: i for i, name in enumerate(LABELS)}).to(device)
+    model.config._name_or_path = base_name
+    layer_count = model.config.num_hidden_layers
+    if args.layers > layer_count:
+        raise ValueError(f"{base_name} has only {layer_count} layers")
     args.output.mkdir(parents=True, exist_ok=True)
     log = args.output / "progress.jsonl"
 
@@ -139,15 +150,14 @@ def train(args):
     report({"stage": "baseline_dev", "metrics": baseline})
     if args.method == "lora":
         config = LoraConfig(task_type=TaskType.SEQ_CLS, r=args.rank, lora_alpha=args.rank * 2,
-                            lora_dropout=.05, target_modules=["query", "value"],
-                            layers_to_transform=list(range(12 - args.layers, 12)))
+                            lora_dropout=.05,
+                            target_modules=["query", "value"] if args.backbone == "finbert" else ["query_proj", "value_proj"],
+                            layers_to_transform=list(range(layer_count - args.layers, layer_count)))
         model = get_peft_model(model, config)
     else:
-        for parameter in model.bert.parameters():
-            parameter.requires_grad = False
-        for layer in model.bert.encoder.layer[-args.layers:]:
-            layer.requires_grad_(True)
-        model.bert.pooler.requires_grad_(True)
+        model.base_model.embeddings.requires_grad_(False)
+        for layer in model.base_model.encoder.layer[:layer_count - args.layers]:
+            layer.requires_grad_(False)
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
     def head(name):
         return "classifier" in name or "pooler" in name
@@ -211,7 +221,7 @@ def train(args):
     if not selected_epoch:
         raise RuntimeError("No checkpoint passed selection gates; see history.json")
     if args.method == "lora":
-        base = AutoModelForSequenceClassification.from_pretrained(model_directory(), attn_implementation="eager")
+        base = AutoModelForSequenceClassification.from_pretrained(directory, num_labels=3, attn_implementation="eager")
         model = PeftModel.from_pretrained(base, args.output / "adapter").to(device)
     else:
         model = AutoModelForSequenceClassification.from_pretrained(args.output / "checkpoint", attn_implementation="eager").to(device)
@@ -224,7 +234,8 @@ def train(args):
     raw_dev = metrics(dev["logits"], dev["labels"])
     use_temperature = calibrated_dev[args.selection_metric] >= raw_dev[args.selection_metric] - .003
     summary = {
-        "version": "gorisk-sentiment-v2", "baseModel": BASE, "baseRevision": REVISION,
+        "version": "gorisk-sentiment-v2", "baseModel": base_name, "baseRevision": revision,
+        "backbone": args.backbone,
         "seed": SEED, "device": device, "rank": args.rank, "layers": args.layers,
         "method": args.method, "headLearningRate": head_lr, "gradientAccumulation": args.accumulation,
         "requireRegressions": args.require_regressions,
@@ -249,6 +260,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=4)
     parser.add_argument("--rank", type=int, default=8)
     parser.add_argument("--method", choices=["lora", "full"], default="lora")
+    parser.add_argument("--backbone", choices=list(BACKBONES), default="finbert")
     parser.add_argument("--layers", type=int, default=6)
     parser.add_argument("--learning-rate", type=float, default=2e-4)
     parser.add_argument("--head-learning-rate", type=float)
