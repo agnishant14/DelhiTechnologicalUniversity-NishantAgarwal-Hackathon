@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { predictTopic } from "./topic";
+import type { CompanySentiment, TopicPrediction } from "../shared/intelligence";
 import {
   STOCKS,
   type Document,
@@ -25,7 +27,7 @@ export function signalId(text: string, mode: Mode) {
 export function detectTickers(text: string): Ticker[] {
   return STOCKS.filter(
     (stock) =>
-      new RegExp(`\\b${stock.ticker}\\b`).test(text) ||
+      new RegExp(stock.ticker.length <= 2 ? `(?:\\$|(?:NYSE|NASDAQ):\\s*)${stock.ticker}\\b` : `\\b${stock.ticker}\\b`).test(text) ||
       stock.aliases.some((alias) =>
         new RegExp(`\\b${escape(alias)}\\b`, "i").test(text),
       ),
@@ -82,7 +84,13 @@ const RULES: { event: EventType; base: number; pattern: RegExp }[] = [
   },
 ];
 
-export function classifyEvent(text: string, sentiment: number) {
+const TOPIC_EVENTS: Record<string, EventType> = {
+  "Fed | Central Banks": "Macroeconomic", Macro: "Macroeconomic",
+  "Legal | Regulation": "Regulatory", "M&A | Investments": "Merger/Acquisition",
+  Earnings: "Earnings", Politics: "Geopolitical", "Personnel Change": "Operational",
+};
+
+export function classifyEvent(text: string, sentiment: number, topic?: TopicPrediction) {
   const matches = RULES.map((rule) => ({
     ...rule,
     terms: [
@@ -90,8 +98,11 @@ export function classifyEvent(text: string, sentiment: number) {
     ],
   }));
   const selected = matches.find((rule) => rule.terms.length > 0);
-  const event = selected?.event ?? "General";
-  const base = selected?.base ?? 2;
+  const mapped = topic && !topic.needsReview ? TOPIC_EVENTS[topic.label] : undefined;
+  const priority = selected && ["Credit Event", "Geopolitical", "Operational"].includes(selected.event);
+  const event = (priority ? selected.event : mapped ?? selected?.event) ?? "General";
+  const base = RULES.find((r) => r.event === event)?.base ?? 2;
+  const eventMethod = !priority && mapped ? "topic model" : selected ? "explicit cue" : "review";
   const severe =
     /\b(bankrupt(?:cy)?|invasion|crisis|collapse|nationwide|massive|default(?:s|ed)?)\b/i.test(
       text,
@@ -110,7 +121,9 @@ export function classifyEvent(text: string, sentiment: number) {
   return {
     event,
     impact,
+    eventMethod: eventMethod as Signal["eventMethod"],
     evidence: [
+      `Event mapping: ${eventMethod}${topic ? `; learned topic: ${topic.label}` : ""}.`,
       selected
         ? `Event cues: ${selected.terms.join(", ")}.`
         : "No specific event cues; classified as general.",
@@ -261,14 +274,37 @@ export class RiskEngine {
       confidence = round(Math.max(pos!, neg!, neu!));
       model = "FinBERT";
     }
-    const classification = classifyEvent(text, sentiment);
+    const topic = predictTopic(text);
+    const classification = classifyEvent(text, sentiment, topic);
     const tickers = detectTickers(text);
+    const sentences = text.split(/(?<=[.!?;])\s+|\s+(?:while|whereas|but)\s+/i);
+    const companySentiments: CompanySentiment[] = [];
+    for (const ticker of tickers) {
+      const scoped = sentences.filter((s) => {
+        const matches = detectTickers(s);
+        return matches.length === 1 && matches[0] === ticker;
+      }).join(" ");
+      const isolated = tickers.length > 1 && scoped.length > 0 && scoped !== text;
+      let score = sentiment;
+      if (isolated) {
+        if (this.infer) {
+          const output = await this.infer(scoped);
+          const positive = output.find((x) => x.label.toLowerCase() === "positive")?.score;
+          const negative = output.find((x) => x.label.toLowerCase() === "negative")?.score;
+          if (positive === undefined || negative === undefined || !Number.isFinite(positive - negative)) throw new Error("Invalid company sentiment output");
+          score = round(positive - negative);
+        } else score = fallbackSentiment(scoped);
+      }
+      companySentiments.push({ ticker, sentiment: score, text: isolated ? scoped : text, scope: isolated ? "company sentence" : "shared headline" });
+    }
     return {
       ...doc,
       text,
       id: signalId(text, mode),
       mode,
       tickers,
+      topic,
+      companySentiments,
       sentiment,
       sentimentLabel:
         sentiment > 0.15
@@ -286,7 +322,7 @@ export class RiskEngine {
           ? "Sentiment = P(positive) − P(negative), using the first 512 tokens."
           : "Sentiment uses a small negation-aware word lexicon; confidence is not calibrated.",
         tickers.length
-          ? `Company matches: ${tickers.join(", ")}. Document sentiment is shared across mentioned companies.`
+          ? `Company matches: ${tickers.join(", ")}. Separate company sentences are scored independently; shared clauses retain headline sentiment.`
           : "No index company matched; this signal does not change stock weights.",
       ],
       ingestedAt: new Date().toISOString(),
