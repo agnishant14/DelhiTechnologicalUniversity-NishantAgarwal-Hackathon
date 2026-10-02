@@ -528,30 +528,46 @@ label {
   background: var(--nav-search-bg);
   border: 1px solid #1e293b;
   border-radius: var(--radius-sm);
-  padding: 5px 12px;
+  padding: 6px 12px;
   width: 220px;
   color: #ffffff;
   transition: all 0.2s ease;
+  box-sizing: border-box;
 }
 
 .nav-search:focus-within {
-  width: 280px;
+  width: 260px;
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  background: #1e293b;
 }
 
-.nav-search input {
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #ffffff;
+.nav-search input,
+.nav-search input:not([type="range"]) {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: #ffffff !important;
   font-size: 12px;
   width: 100%;
-  padding: 0;
+  padding: 0 !important;
+  line-height: 1.4;
+  height: auto;
+}
+
+.nav-search input:focus,
+.nav-search input:not([type="range"]):focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
 }
 
 .nav-search input::placeholder {
-  color: #64748b;
+  color: #94a3b8;
   font-size: 12px;
 }
 
@@ -835,6 +851,15 @@ label {
   gap: 14px;
   position: relative;
   overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.greeting-card::-webkit-scrollbar,
+.greeting-actions-row::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .greeting-card::before {
@@ -931,13 +956,15 @@ label {
 
 .greeting-actions-grid,
 .greeting-actions-row {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  align-items: center;
   gap: 8px;
   padding-top: 14px;
   border-top: 1px solid var(--line);
   width: 100%;
   box-sizing: border-box;
+  flex-wrap: wrap;
+  overflow: visible;
 }
 
 .greeting-action-btn {
@@ -946,7 +973,7 @@ label {
   justify-content: center;
   gap: 6px;
   height: 34px;
-  padding: 0 6px;
+  padding: 0 10px;
   border-radius: var(--radius-sm);
   font-size: 11px;
   font-weight: 600;
@@ -956,14 +983,12 @@ label {
   transition: all 0.15s ease;
   white-space: nowrap;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  width: 100%;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: fit-content;
   box-sizing: border-box;
 }
 
 .greeting-action-btn span {
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -2535,7 +2560,13 @@ tr.selected-row td {
   .greeting-actions-grid,
   .greeting-actions-row {
     width: 100%;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .greeting-action-btn {
+    flex: 1 1 calc(50% - 8px);
+    min-width: 0;
   }
   .revenue-stats-body {
     grid-template-columns: 1fr;
