@@ -172,7 +172,19 @@ export function ModelLab({ openSandbox }: { openSandbox: () => void }) {
                     </td>
                     <td>
                       <div className="model-score">
-                        <i style={{ width: percent(row["f1-score"]) }} />
+                        <div className="model-score-track">
+                          <i
+                            style={{
+                              width: percent(row["f1-score"]),
+                              background:
+                                row["f1-score"] >= 0.75
+                                  ? "#10b981"
+                                  : row["f1-score"] >= 0.5
+                                    ? "#2563eb"
+                                    : "#f59e0b",
+                            }}
+                          />
+                        </div>
                         <span>{percent(row["f1-score"])}</span>
                       </div>
                     </td>
