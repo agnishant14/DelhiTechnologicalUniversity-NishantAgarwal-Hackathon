@@ -13,6 +13,7 @@ import {
 import type { Dashboard, Ticker } from "../../shared/types";
 import { percent, signed, tone, sentimentTone } from "../lib/api";
 import { SignalCard } from "../components/SignalCard";
+import { StockLogo } from "../StockLogo";
 
 export function IndexLab({ data }: { data: Dashboard }) {
   const [selected, setSelected] = useState<Ticker>("AAPL");
@@ -78,13 +79,15 @@ export function IndexLab({ data }: { data: Dashboard }) {
             <span className="tag">{percent(holding.weight, 2)} now</span>
           </div>
           <div className="row wrap chart-select">
-            {["AAPL", "NVDA", "MSFT", "TSLA", "JPM"].map((ticker) => (
+            {(["AAPL", "NVDA", "MSFT", "TSLA", "JPM"] as Ticker[]).map((ticker) => (
               <button
                 className={`chip ${selected === ticker ? "active" : ""}`}
                 key={ticker}
-                onClick={() => setSelected(ticker as Ticker)}
+                onClick={() => setSelected(ticker)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
               >
-                {ticker}
+                <StockLogo ticker={ticker} size={16} />
+                <b>{ticker}</b>
               </button>
             ))}
           </div>
@@ -212,7 +215,9 @@ export function IndexLab({ data }: { data: Dashboard }) {
                       <button
                         className="stock-button"
                         onClick={() => setSelected(h.ticker)}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 10 }}
                       >
+                        <StockLogo ticker={h.ticker} size={22} />
                         <span>
                           <b>{h.ticker}</b>
                           <small>{h.name}</small>
