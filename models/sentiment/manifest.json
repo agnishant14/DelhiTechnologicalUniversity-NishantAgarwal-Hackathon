@@ -1,0 +1,17 @@
+{
+  "version": "gorisk-sentiment-v2",
+  "dtype": "fp16",
+  "maxLength": 128,
+  "labelOrder": [
+    "positive",
+    "negative",
+    "neutral"
+  ],
+  "baseModel": "ProsusAI/finbert",
+  "baseRevision": "4556d13015211d73dccd3fdd39d39232506f3e43",
+  "temperature": 1.1272934883208123,
+  "url": "https://github.com/agnishant14/DelhiTechnologicalUniversity-NishantAgarwal-Hackathon/releases/download/sentiment-v2.0.0/model_fp16.onnx",
+  "sha256": "908ac567f2a2952e12e5e537519984a749473beec9f93f4c093e12b3436afdee",
+  "bytes": 219255692,
+  "adapterSha256": "dabd7fbb5e49f261ccf8c3a3b7336904c37ae518c5d6e69cab730389477e0c91"
+}

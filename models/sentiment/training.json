@@ -1,0 +1,183 @@
+{
+  "version": "gorisk-sentiment-v2",
+  "baseModel": "ProsusAI/finbert",
+  "baseRevision": "4556d13015211d73dccd3fdd39d39232506f3e43",
+  "seed": 42,
+  "device": "mps",
+  "rank": 8,
+  "layers": 6,
+  "learningRate": 0.0002,
+  "batchSize": 24,
+  "maxLength": 128,
+  "trainableParameters": 149763,
+  "classWeights": [
+    1.060912013053894,
+    1.3178331851959229,
+    0.6212548017501831
+  ],
+  "phrasebankLossWeight": 0.6,
+  "selectionMetric": "dev policyMacroF1",
+  "selectedEpoch": 4,
+  "temperature": 1.1272934883208123,
+  "fittedTemperature": 1.1272934883208123,
+  "temperatureAccepted": true,
+  "elapsedSeconds": 863.3,
+  "temperatureSelection": "Calibration NLL optimum; argmax replaces the previous score-threshold policy, so temperature preserves class ranking.",
+  "selectedRun": "run-a",
+  "splitManifest": "data/sentiment/splits.json",
+  "development": {
+    "count": 932,
+    "accuracy": 0.8444206008583691,
+    "macroF1": 0.8133615452748422,
+    "policyAccuracy": 0.7736051502145923,
+    "policyMacroF1": 0.7534684160591487,
+    "negativeRecall": 0.8531468531468531,
+    "negativeToNeutral": 16,
+    "nll": 0.4199282258264659,
+    "brier": 0.2317431703356928,
+    "ece10": 0.03019870181324145,
+    "confusionMatrix": [
+      [
+        153,
+        10,
+        28
+      ],
+      [
+        5,
+        122,
+        16
+      ],
+      [
+        52,
+        34,
+        512
+      ]
+    ],
+    "perClass": {
+      "positive": {
+        "precision": 0.7285714285714285,
+        "recall": 0.8010471204188482,
+        "f1-score": 0.7630922693266833,
+        "support": 191.0
+      },
+      "negative": {
+        "precision": 0.7349397590361446,
+        "recall": 0.8531468531468531,
+        "f1-score": 0.7896440129449838,
+        "support": 143.0
+      },
+      "neutral": {
+        "precision": 0.920863309352518,
+        "recall": 0.8561872909698997,
+        "f1-score": 0.8873483535528596,
+        "support": 598.0
+      },
+      "accuracy": 0.8444206008583691,
+      "macro avg": {
+        "precision": 0.794791498986697,
+        "recall": 0.8367937548452002,
+        "f1-score": 0.8133615452748422,
+        "support": 932.0
+      },
+      "weighted avg": {
+        "precision": 0.8529289564293104,
+        "recall": 0.8444206008583691,
+        "f1-score": 0.8468927389668875,
+        "support": 932.0
+      }
+    }
+  },
+  "export": {
+    "exportClassAgreement": 1.0,
+    "meanProbabilityDifference": 0.0001403495843987912,
+    "onnxSha256": "908ac567f2a2952e12e5e537519984a749473beec9f93f4c093e12b3436afdee",
+    "onnxBytes": 219255692,
+    "precision": "fp16",
+    "temperature": 1.1272934883208123,
+    "maxLength": 128,
+    "selectedRun": "run-a",
+    "selectedEpoch": 4
+  },
+  "candidates": [
+    {
+      "run": "run-a",
+      "selectedEpoch": 4,
+      "checkpointCriterion": "dev policyMacroF1",
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 0.3948694014437661,
+          "accuracy": 0.8143776824034334,
+          "macroF1": 0.7785617186867659,
+          "nll": 0.49641795059992305,
+          "ece10": 0.022724215756670066
+        },
+        {
+          "epoch": 2,
+          "loss": 0.3251933123719456,
+          "accuracy": 0.8315450643776824,
+          "macroF1": 0.7987171751699913,
+          "nll": 0.4542552107785899,
+          "ece10": 0.02487979535125358
+        },
+        {
+          "epoch": 3,
+          "loss": 0.2994200286049281,
+          "accuracy": 0.8358369098712446,
+          "macroF1": 0.8071306596089426,
+          "nll": 0.4410943364470663,
+          "ece10": 0.028521191952310433
+        },
+        {
+          "epoch": 4,
+          "loss": 0.27864160983605796,
+          "accuracy": 0.8444206008583691,
+          "macroF1": 0.8133615452748422,
+          "nll": 0.4235880068510849,
+          "ece10": 0.030438377461975738
+        }
+      ]
+    },
+    {
+      "run": "run-b",
+      "selectedEpoch": 2,
+      "checkpointCriterion": "dev macroF1",
+      "history": [
+        {
+          "epoch": 1,
+          "loss": 0.40080766461888073,
+          "accuracy": 0.8379828326180258,
+          "macroF1": 0.7999565134107245,
+          "nll": 0.44481086555676336,
+          "ece10": 0.024335456124702753
+        },
+        {
+          "epoch": 2,
+          "loss": 0.3183742893720251,
+          "accuracy": 0.851931330472103,
+          "macroF1": 0.815690730734445,
+          "nll": 0.4102875813767862,
+          "ece10": 0.02386047198664989
+        },
+        {
+          "epoch": 3,
+          "loss": 0.2803885081643444,
+          "accuracy": 0.8465665236051502,
+          "macroF1": 0.8109281289248268,
+          "nll": 0.4030183853288673,
+          "ece10": 0.036143246990160874
+        }
+      ]
+    }
+  ],
+  "commands": {
+    "export": "python scripts/export_sentiment.py --run .cache/sentiment-training/run-a",
+    "evaluate": "python scripts/evaluate_sentiment.py --run .cache/sentiment-training/run-a"
+  },
+  "releaseSelection": {
+    "chosen": "run-a, epoch 4",
+    "reason": "Run B had slightly better development accuracy but failed the fixed Apple bankruptcy-filing regression. Run A passed the credit-distress probes. Selection did not use final-test metrics.",
+    "rejectedRun": "run-b, epoch 2",
+    "failedExample": "apple files for bankruptcy"
+  }
+}
