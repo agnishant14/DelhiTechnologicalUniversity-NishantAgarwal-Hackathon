@@ -1,13 +1,17 @@
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 :root {
-  font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
   color: #0f172a;
   background-color: #f4f6f9;
   font-synthesis: none;
   font-weight: 400;
   line-height: 1.5;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 
   --bg: #f4f6f9;
   --card-bg: #ffffff;
@@ -100,42 +104,45 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: "Plus Jakarta Sans", "Manrope", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
   color: var(--text-main);
+  letter-spacing: -0.02em;
 }
 
 h1 {
   font-size: clamp(24px, 2.5vw, 32px);
   line-height: 1.25;
-  letter-spacing: -0.8px;
+  letter-spacing: -0.03em;
   margin-bottom: 8px;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 h2 {
   font-size: 18px;
   line-height: 1.35;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.02em;
   margin-bottom: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 h3 {
   font-size: 15px;
   line-height: 1.45;
+  letter-spacing: -0.015em;
   margin-bottom: 8px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 h4 {
   font-size: 14px;
   margin: 8px 0;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 p {
   font-size: 13px;
-  line-height: 1.65;
+  line-height: 1.6;
   color: var(--text-muted);
   margin-bottom: 14px;
 }
@@ -866,9 +873,9 @@ label {
 
 .greeting-card h2 {
   font-size: 19px;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--text-main);
-  letter-spacing: -0.4px;
+  letter-spacing: -0.02em;
   margin: 0;
   line-height: 1.3;
 }
@@ -1030,8 +1037,8 @@ label {
 
 .metric-block h4 {
   font-size: 26px;
-  font-weight: 750;
-  letter-spacing: -0.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   color: var(--text-main);
   margin: 0 0 6px 0;
 }
@@ -1078,8 +1085,8 @@ label {
 
 .rev-metric-lead h4 {
   font-size: 24px;
-  font-weight: 750;
-  letter-spacing: -0.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   margin: 4px 0;
 }
 
@@ -1344,11 +1351,11 @@ label {
   display: flex;
   align-items: baseline;
   gap: 7px;
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 28px;
-  letter-spacing: -0.8px;
+  letter-spacing: -0.02em;
   margin: 8px 0 4px;
-  font-weight: 750;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-main);
 }
@@ -1595,7 +1602,7 @@ dialog::backdrop {
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 10px;
-  font-family: monospace;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11.5px;
 }
 
@@ -1761,9 +1768,9 @@ dialog::backdrop {
 
 .value-bridge strong {
   font-size: 22px;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--text-main);
-  letter-spacing: -0.4px;
+  letter-spacing: -0.02em;
 }
 
 .pnl-banner {
