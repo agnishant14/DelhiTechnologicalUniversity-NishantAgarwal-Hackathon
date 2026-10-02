@@ -1,6 +1,7 @@
 import Parser from "rss-parser";
 import { z } from "zod";
 import type { Document, SourceStatus } from "../shared/types";
+import { detectTickers } from "./engine";
 
 export interface Source {
   name: string;
@@ -24,7 +25,7 @@ const validDate = (value?: string) => {
 async function request(url: string) {
   const response = await fetch(url, {
     signal: AbortSignal.timeout(15_000),
-    headers: { "User-Agent": "SignalDesk-Hackathon/1.0" },
+    headers: { "User-Agent": "GoRisk-Hackathon/2.0" },
   });
   if (!response.ok) throw new Error(`Source returned HTTP ${response.status}`);
   const text = await response.text();
@@ -37,7 +38,7 @@ export const sources: Source[] = [
     kind: "news",
     fetch: async () => {
       const query =
-        "(Apple OR Microsoft OR Nvidia OR Tesla OR Amazon OR JPMorgan) (earnings OR stock OR revenue) when:1d";
+        "(Apple OR Microsoft OR Nvidia OR Tesla OR Amazon OR JPMorgan OR Alphabet OR Meta OR Exxon OR Visa OR Walmart OR Mastercard OR UnitedHealth OR Broadcom OR Costco OR inflation OR sanctions OR bankruptcy) (stock OR earnings OR market OR economy) when:1d";
       const xml = await request(
         `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`,
       );
@@ -65,7 +66,7 @@ export const sources: Source[] = [
       const cutoff = Math.floor(Date.now() / 1000) - 86400;
       const raw = JSON.parse(
         await request(
-          `https://hn.algolia.com/api/v1/search_by_date?query=Nvidia&tags=story&numericFilters=created_at_i%3E${cutoff}&hitsPerPage=20`,
+          `https://hn.algolia.com/api/v1/search_by_date?tags=story&numericFilters=created_at_i%3E${cutoff}&hitsPerPage=100`,
         ),
       );
       const parsed = z
@@ -81,7 +82,7 @@ export const sources: Source[] = [
         .parse(raw);
       return parsed.hits.flatMap((post) => {
         const publishedAt = validDate(post.created_at);
-        return post.title && publishedAt
+        return post.title && publishedAt && (detectTickers(post.title).length || /\b(economy|inflation|interest rate|tariff|banking|stock market|credit|finance)\b/i.test(post.title))
           ? [
               {
                 text: cleanText(post.title),
@@ -161,8 +162,8 @@ export const yahooFinanceSource: Source = {
 export const defaultSources: Source[] = [
   sources[0],
   sources[1],
-  gdeltSource,
   yahooFinanceSource,
+  ...(process.env.NEWS_SOURCE === "gdelt" ? [gdeltSource] : []),
 ];
 export async function fetchSources(adapters: Source[]) {
   const results = await Promise.allSettled(
