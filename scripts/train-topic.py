@@ -84,7 +84,7 @@ def main():
     baseline = np.full(len(y), np.bincount(labels).argmax())
     accepted = probabilities.max(axis=1) >= .45
     export = {
-        "version": VERSION, "labels": LABELS, "vocabulary": vec.vocabulary_,
+        "version": VERSION, "labels": LABELS, "vocabulary": {k: int(v) for k, v in vec.vocabulary_.items()},
         "idf": vec.idf_.round(7).tolist(), "coefficients": model.coef_.round(7).tolist(),
         "intercept": model.intercept_.round(7).tolist(), "threshold": .45,
     }
