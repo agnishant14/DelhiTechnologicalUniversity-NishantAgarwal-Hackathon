@@ -1,5 +1,6 @@
 import argparse
 import json
+import math
 import random
 import time
 from pathlib import Path
@@ -7,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from huggingface_hub import snapshot_download
-from peft import LoraConfig, TaskType, get_peft_model
+from peft import LoraConfig, PeftModel, TaskType, get_peft_model
 from scipy.optimize import minimize_scalar
 from scipy.special import softmax
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score, log_loss
@@ -17,6 +18,16 @@ from prepare_sentiment import LABELS, ROOT, SEED, model_text, prepare
 
 BASE = "ProsusAI/finbert"
 REVISION = "4556d13015211d73dccd3fdd39d39232506f3e43"
+
+REGRESSIONS = [
+    ("apple goes bankrupt", 1), ("Apple goes bankrupt.", 1),
+    ("apple files for bankruptcy", 1), ("tesla goes bankrupt", 1),
+    ("Microsoft defaults on its debt", 1),
+    ("Apple is insolvent and cannot repay its debts", 1),
+    ("Apple reports record profits and beats revenue forecasts.", 0),
+    ("Tesla reports severe losses as vehicle sales plunge.", 1),
+    ("Microsoft will hold its annual meeting on Tuesday.", 2),
+]
 
 
 def model_directory():
@@ -54,8 +65,9 @@ def metrics(logits, labels, temperature=1.0):
 
 
 class Corpus:
-    def __init__(self, rows, tokenizer, max_length):
+    def __init__(self, rows, tokenizer, max_length, phrasebank_weight=.6):
         self.rows, self.tokenizer = rows, tokenizer
+        self.phrasebank_weight = phrasebank_weight
         self.tokens = tokenizer([model_text(r["text"]) for r in rows], truncation=True, max_length=max_length)
 
     def batches(self, batch_size, epoch=None):
@@ -73,7 +85,7 @@ class Corpus:
             encoded = [{k: v[i] for k, v in self.tokens.items()} for i in indices]
             tokens = self.tokenizer.pad(encoded, padding=True, pad_to_multiple_of=8, return_tensors="pt")
             labels = torch.tensor([self.rows[i]["label"] for i in indices])
-            weights = torch.tensor([.6 if self.rows[i]["source"] == "financial-phrasebank" else 1.0 for i in indices])
+            weights = torch.tensor([self.phrasebank_weight if self.rows[i]["source"] == "financial-phrasebank" else 1.0 for i in indices])
             yield tokens, labels, weights
 
 
@@ -86,7 +98,19 @@ def predict(model, corpus, device, batch_size):
     return np.concatenate(outputs)
 
 
+def load_checkpoint(run, device="cpu"):
+    settings = json.loads((run / "training.json").read_text())
+    if settings.get("method", "lora") == "full":
+        return AutoModelForSequenceClassification.from_pretrained(run / "checkpoint", attn_implementation="eager").to(device)
+    base = AutoModelForSequenceClassification.from_pretrained(model_directory(), attn_implementation="eager")
+    return PeftModel.from_pretrained(base, run / "adapter").to(device)
+
+
 def train(args):
+    if args.output.exists() and any(args.output.iterdir()):
+        raise ValueError("Choose an empty output directory to preserve previous experiments")
+    if not 1 <= args.layers <= 12 or min(args.epochs, args.batch_size, args.accumulation) < 1:
+        raise ValueError("Invalid layer, epoch, batch or accumulation count")
     random.seed(SEED)
     np.random.seed(SEED)
     torch.manual_seed(SEED)
@@ -94,8 +118,10 @@ def train(args):
     device = "mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu"
     rows, splits = prepare()
     tokenizer = AutoTokenizer.from_pretrained(model_directory())
-    corpora = {s: Corpus([r for r in rows if r["split"] == s], tokenizer, args.max_length)
+    corpora = {s: Corpus([r for r in rows if r["split"] == s], tokenizer, args.max_length, args.phrasebank_weight)
                for s in ["train", "dev", "calibration"]}
+    probes = Corpus([{"text": text, "label": label, "source": "regression"}
+                     for text, label in REGRESSIONS], tokenizer, args.max_length)
     labels = {s: np.array([r["label"] for r in corpus.rows]) for s, corpus in corpora.items()}
     model = AutoModelForSequenceClassification.from_pretrained(model_directory(), attn_implementation="eager").to(device)
     model.config._name_or_path = BASE
@@ -111,17 +137,28 @@ def train(args):
     started = time.time()
     baseline = metrics(predict(model, corpora["dev"], device, args.batch_size), labels["dev"])
     report({"stage": "baseline_dev", "metrics": baseline})
-    config = LoraConfig(task_type=TaskType.SEQ_CLS, r=args.rank, lora_alpha=args.rank * 2,
-                        lora_dropout=.05, target_modules=["query", "value"],
-                        layers_to_transform=list(range(12 - args.layers, 12)))
-    model = get_peft_model(model, config)
+    if args.method == "lora":
+        config = LoraConfig(task_type=TaskType.SEQ_CLS, r=args.rank, lora_alpha=args.rank * 2,
+                            lora_dropout=.05, target_modules=["query", "value"],
+                            layers_to_transform=list(range(12 - args.layers, 12)))
+        model = get_peft_model(model, config)
+    else:
+        for parameter in model.bert.parameters():
+            parameter.requires_grad = False
+        for layer in model.bert.encoder.layer[-args.layers:]:
+            layer.requires_grad_(True)
+        model.bert.pooler.requires_grad_(True)
     trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    def head(name):
+        return "classifier" in name or "pooler" in name
+    head_lr = args.head_learning_rate or (args.learning_rate / 4 if args.method == "lora" else args.learning_rate)
     optimizer = torch.optim.AdamW([
-        {"params": [p for n, p in model.named_parameters() if p.requires_grad and "lora_" in n], "lr": args.learning_rate},
-        {"params": [p for n, p in model.named_parameters() if p.requires_grad and "lora_" not in n], "lr": args.learning_rate / 4},
+        {"params": [p for n, p in model.named_parameters() if p.requires_grad and not head(n)], "lr": args.learning_rate},
+        {"params": [p for n, p in model.named_parameters() if p.requires_grad and head(n)], "lr": head_lr},
     ], weight_decay=.01)
     steps = int(np.ceil(len(corpora["train"].rows) / args.batch_size))
-    scheduler = get_linear_schedule_with_warmup(optimizer, max(1, int(steps * args.epochs * .06)), steps * args.epochs)
+    updates = math.ceil(steps / args.accumulation) * args.epochs
+    scheduler = get_linear_schedule_with_warmup(optimizer, max(1, int(updates * .06)), updates)
     frequencies = np.bincount(labels["train"], minlength=3)
     weights = (len(labels["train"]) / (3 * frequencies)) ** args.class_weight_power
     class_weights = torch.tensor(weights / weights.mean(), dtype=torch.float32, device=device)
@@ -132,39 +169,52 @@ def train(args):
         model.train()
         total, count = 0.0, 0
         for step, (tokens, target, source_weight) in enumerate(corpora["train"].batches(args.batch_size, epoch), 1):
-            optimizer.zero_grad(set_to_none=True)
+            if (step - 1) % args.accumulation == 0:
+                optimizer.zero_grad(set_to_none=True)
             logits = model(**tokens.to(device)).logits
             losses = torch.nn.functional.cross_entropy(logits, target.to(device), weight=class_weights, reduction="none")
             loss = (losses * source_weight.to(device)).mean()
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
-            scheduler.step()
+            group_size = min(args.accumulation, steps - ((step - 1) // args.accumulation) * args.accumulation)
+            (loss / group_size).backward()
+            if step % args.accumulation == 0 or step == steps:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+                optimizer.step()
+                scheduler.step()
             total += loss.item()
             count += 1
             if step % 50 == 0 or step == steps:
                 report({"stage": "batch", "epoch": epoch + 1, "step": step, "steps": steps, "loss": round(total / count, 5)})
         dev_logits = predict(model, corpora["dev"], device, args.batch_size)
-        result = {"epoch": epoch + 1, "loss": total / count, "dev": metrics(dev_logits, labels["dev"])}
+        probe_predictions = predict(model, probes, device, args.batch_size).argmax(1)
+        failures = [{"text": text, "expected": LABELS[label], "predicted": LABELS[int(pred)]}
+                    for (text, label), pred in zip(REGRESSIONS, probe_predictions) if pred != label]
+        result = {"epoch": epoch + 1, "loss": total / count, "dev": metrics(dev_logits, labels["dev"]),
+                  "regressionFailures": failures}
         history.append(result)
         report({"stage": "validation", **result})
-        if result["dev"][args.selection_metric] > best + .001:
+        eligible = not args.require_regressions or not failures
+        if eligible and result["dev"][args.selection_metric] > best + .001:
             best, stale, selected_epoch = result["dev"][args.selection_metric], 0, epoch + 1
-            model.save_pretrained(args.output / "adapter")
-            tokenizer.save_pretrained(args.output / "adapter")
+            checkpoint = args.output / ("adapter" if args.method == "lora" else "checkpoint")
+            model.save_pretrained(checkpoint)
+            tokenizer.save_pretrained(checkpoint)
             np.savez(args.output / "best-dev.npz", logits=dev_logits, labels=labels["dev"])
         else:
             stale += 1
         (args.output / "history.json").write_text(json.dumps(history, indent=2) + "\n")
-        if stale >= 2:
+        if stale >= 2 and selected_epoch:
             break
-    from peft import PeftModel
     model.cpu()
     del model, optimizer
     if device == "mps":
         torch.mps.empty_cache()
-    base = AutoModelForSequenceClassification.from_pretrained(model_directory(), attn_implementation="eager")
-    model = PeftModel.from_pretrained(base, args.output / "adapter").to(device)
+    if not selected_epoch:
+        raise RuntimeError("No checkpoint passed selection gates; see history.json")
+    if args.method == "lora":
+        base = AutoModelForSequenceClassification.from_pretrained(model_directory(), attn_implementation="eager")
+        model = PeftModel.from_pretrained(base, args.output / "adapter").to(device)
+    else:
+        model = AutoModelForSequenceClassification.from_pretrained(args.output / "checkpoint", attn_implementation="eager").to(device)
     calibration = predict(model, corpora["calibration"], device, args.batch_size)
     optimum = minimize_scalar(lambda t: log_loss(labels["calibration"], softmax(calibration / t, axis=1), labels=[0, 1, 2]),
                               bounds=(.4, 3.0), method="bounded")
@@ -176,9 +226,11 @@ def train(args):
     summary = {
         "version": "gorisk-sentiment-v2", "baseModel": BASE, "baseRevision": REVISION,
         "seed": SEED, "device": device, "rank": args.rank, "layers": args.layers,
+        "method": args.method, "headLearningRate": head_lr, "gradientAccumulation": args.accumulation,
+        "requireRegressions": args.require_regressions,
         "learningRate": args.learning_rate, "batchSize": args.batch_size, "maxLength": args.max_length,
         "trainableParameters": trainable, "classWeights": class_weights.cpu().tolist(),
-        "phrasebankLossWeight": .6, "classWeightPower": args.class_weight_power,
+        "phrasebankLossWeight": args.phrasebank_weight, "classWeightPower": args.class_weight_power,
         "selectionMetric": f"dev {args.selection_metric}", "history": history,
         "baselineDev": baseline, "selectedEpoch": selected_epoch,
         "temperature": temp if use_temperature else 1.0, "fittedTemperature": temp,
@@ -196,8 +248,13 @@ if __name__ == "__main__":
     parser.add_argument("--output", type=Path, default=ROOT / ".cache/sentiment-training/run-a")
     parser.add_argument("--epochs", type=int, default=4)
     parser.add_argument("--rank", type=int, default=8)
+    parser.add_argument("--method", choices=["lora", "full"], default="lora")
     parser.add_argument("--layers", type=int, default=6)
     parser.add_argument("--learning-rate", type=float, default=2e-4)
+    parser.add_argument("--head-learning-rate", type=float)
+    parser.add_argument("--accumulation", type=int, default=1)
+    parser.add_argument("--phrasebank-weight", type=float, default=.6)
+    parser.add_argument("--require-regressions", action="store_true")
     parser.add_argument("--batch-size", type=int, default=24)
     parser.add_argument("--max-length", type=int, default=128)
     parser.add_argument("--class-weight-power", type=float, default=.5)
