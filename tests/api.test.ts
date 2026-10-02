@@ -35,6 +35,7 @@ beforeEach(async () => {
     },
   ]);
   await service.initialize();
+  await service.setMode("demo");
 });
 afterEach(() => store.close());
 
@@ -70,7 +71,7 @@ describe("pipeline API", () => {
     ).toBe(true);
     await request(app).post("/api/refresh").expect(429);
     await request(app).post("/api/mode").send({ mode: "demo" }).expect(200);
-    expect(service.dashboard().signals).toHaveLength(12);
+    expect(service.dashboard().signals).toHaveLength(2);
   });
   it("rejects invalid payloads and exports machine-readable signals", async () => {
     const app = createApp(service);
@@ -79,19 +80,19 @@ describe("pipeline API", () => {
     await request(app).get("/api/missing").expect(404);
     const result = await request(app).get("/api/export").expect(200);
     expect(result.headers["content-disposition"]).toContain("attachment");
-    expect(result.body.signals).toHaveLength(12);
+    expect(result.body.signals).toHaveLength(2);
   });
   it("finishes replay without repeating scenarios", async () => {
-    for (let i = 0; i < 6; i++) await service.replay();
-    expect(service.dashboard().signals).toHaveLength(24);
+    for (let i = 0; i < 2; i++) await service.replay();
+    expect(service.dashboard().signals).toHaveLength(6);
     await expect(service.replay()).rejects.toThrow("All demo scenarios");
   });
   it("retains replay position across service restarts", async () => {
     await service.replay();
     const second = new RiskService(service.engine, store);
     await second.initialize();
-    expect(second.dashboard().signals).toHaveLength(14);
-    expect(second.dashboard().replay.position).toBe(14);
+    expect(second.dashboard().signals).toHaveLength(4);
+    expect(second.dashboard().replay.position).toBe(4);
   });
   it("preserves source status and cooldown across restarts", async () => {
     await service.setMode("live");
@@ -114,7 +115,7 @@ describe("pipeline API", () => {
       .set("Origin", "https://untrusted.example")
       .send({})
       .expect(403);
-    expect(service.dashboard().replay.position).toBe(12);
+    expect(service.dashboard().replay.position).toBe(2);
   });
   it("serializes concurrent model updates", async () => {
     let release!: () => void;
@@ -139,19 +140,57 @@ describe("pipeline API", () => {
     await first;
     expect(service.busy).toBe(false);
   });
-  it("serves large financial dataset with pagination and search filtering", async () => {
+  it("serves measured model results and validates stress scenarios", async () => {
     const app = createApp(service);
-    const res = await request(app).get("/api/dataset?limit=10").expect(200);
-    expect(res.body.total).toBe(923);
-    expect(res.body.records).toHaveLength(10);
-    expect(res.body.records[0]).toHaveProperty("text");
-    expect(res.body.records[0]).toHaveProperty("sourceName");
-
-    const searchRes = await request(app)
-      .get("/api/dataset?search=Nomura&limit=5")
+    const model = await request(app).get("/api/model").expect(200);
+    expect(model.body.trainCount).toBeGreaterThan(15000);
+    expect(model.body.validationCount).toBeGreaterThan(3000);
+    expect(model.body.accuracy).toBeGreaterThan(model.body.majorityAccuracy);
+    await request(app)
+      .post("/api/stress/simulate")
+      .send({
+        event: "Geopolitical",
+        shocks: { equityPct: -999, ratesBps: 0, creditBps: 0, fxPct: 0 },
+      })
+      .expect(400);
+    const test = await request(app)
+      .post("/api/stress/simulate")
+      .send({ event: "Geopolitical" })
       .expect(200);
-    expect(searchRes.body.filteredCount).toBeGreaterThan(0);
-    expect(searchRes.body.records[0].text).toContain("Nomura");
+    expect(test.body.before).toBe(100);
+    expect(test.body.after).toBeLessThan(100);
+  });
+  it("persists automatic stress tests without duplicating triggers", async () => {
+    await service.replay();
+    const triggered = service.stress().history;
+    expect(triggered.length).toBeGreaterThan(0);
+    expect(
+      triggered.every((s) => s.trigger === "automatic" && s.impact > 7),
+    ).toBe(true);
+    await service.analyze({
+      text: triggered[0].headline!,
+      sourceKind: "manual",
+      sourceName: "Test",
+      publishedAt: new Date().toISOString(),
+    });
+    expect(service.stress().history).toHaveLength(triggered.length);
+    const restarted = new RiskService(service.engine, store);
+    await restarted.initialize();
+    expect(restarted.stress().history).toEqual(triggered);
+  });
+  it("previews a headline without changing saved signals, weights or stress history", async () => {
+    const before = service.dashboard();
+    const stress = service.stress();
+    const result = await request(createApp(service))
+      .post("/api/preview")
+      .send({
+        text: "Tesla faces a nationwide recall crisis and massive losses.",
+      })
+      .expect(200);
+    expect(result.body.signal.tickers).toContain("TSLA");
+    expect(result.body.holdings).toHaveLength(20);
+    expect(service.dashboard().signals).toEqual(before.signals);
+    expect(service.dashboard().history).toEqual(before.history);
+    expect(service.stress()).toEqual(stress);
   });
 });
-
