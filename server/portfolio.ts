@@ -18,8 +18,15 @@ export const equalWeights = () =>
     STOCKS.map((s) => [s.ticker, 1 / STOCKS.length]),
   ) as Record<Ticker, number>;
 export function validWeights(weights: Record<Ticker, number>) {
-  return STOCKS.every(({ ticker }) => Number.isFinite(weights[ticker]) && weights[ticker] >= POLICY.minWeight - 1e-9 && weights[ticker] <= POLICY.maxWeight + 1e-9)
-    && Math.abs(STOCKS.reduce((sum, s) => sum + weights[s.ticker], 0) - 1) < 1e-8;
+  return (
+    STOCKS.every(
+      ({ ticker }) =>
+        Number.isFinite(weights[ticker]) &&
+        weights[ticker] >= POLICY.minWeight - 1e-9 &&
+        weights[ticker] <= POLICY.maxWeight + 1e-9,
+    ) &&
+    Math.abs(STOCKS.reduce((sum, s) => sum + weights[s.ticker], 0) - 1) < 1e-8
+  );
 }
 export function aggregate(signals: Signal[], now = Date.now()) {
   return Object.fromEntries(
@@ -38,13 +45,15 @@ export function aggregate(signals: Signal[], now = Date.now()) {
         const weight =
           2 ** (-age / POLICY.halfLifeHours) *
           (s.sourceKind === "social" ? 0.6 : 1);
-        numerator += (s.companySentiments?.find((c) => c.ticker === stock.ticker)?.sentiment ?? s.sentiment) * weight;
+        numerator +=
+          (s.companySentiments?.find((c) => c.ticker === stock.ticker)
+            ?.sentiment ?? s.sentiment) * weight;
         denominator += weight;
       });
       return [
         stock.ticker,
         {
-          sentiment: denominator ? numerator / denominator : 0,
+          sentiment: denominator ? numerator / Math.max(1, denominator) : 0,
           signalCount: relevant.length,
         },
       ];
