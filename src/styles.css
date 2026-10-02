@@ -1605,15 +1605,17 @@ dialog::backdrop {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   border-bottom: 1px solid var(--line);
   padding-bottom: 14px;
 }
 
 .dialog-head h2 {
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
   margin: 0;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
 }
 
 .dialog-head p {
@@ -1622,11 +1624,59 @@ dialog::backdrop {
   margin-top: 4px;
 }
 
+.dialog-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.dialog-close-btn:hover {
+  background: #ffffff;
+  color: var(--text-main);
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
 /* Sandbox Specific */
 .sandbox-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.sandbox form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sandbox .chip {
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sandbox .chip:hover {
+  background: #ffffff;
+  border-color: #2563eb;
+  color: #2563eb;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.08);
 }
 
 .sandbox-grid {
