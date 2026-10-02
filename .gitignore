@@ -25,6 +25,7 @@ __pycache__/
 *.onnx
 *.onnx_data
 *.safetensors
+!models/sentiment/adapter/adapter_model.safetensors
 *.pt
 *.pth
 *.ckpt
