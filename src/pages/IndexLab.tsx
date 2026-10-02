@@ -10,12 +10,18 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { Dashboard, Ticker } from "../../shared/types";
+import type { Dashboard, QuotesPayload, Ticker } from "../../shared/types";
 import { percent, signed, tone, sentimentTone } from "../lib/api";
 import { SignalCard } from "../components/SignalCard";
 import { StockLogo } from "../StockLogo";
 
-export function IndexLab({ data }: { data: Dashboard }) {
+export function IndexLab({
+  data,
+  quotes,
+}: {
+  data: Dashboard;
+  quotes?: QuotesPayload;
+}) {
   const [selected, setSelected] = useState<Ticker>("AAPL");
   const [sector, setSector] = useState("All sectors");
   const history = useMemo(
@@ -193,6 +199,7 @@ export function IndexLab({ data }: { data: Dashboard }) {
               <tr>
                 <th>Company</th>
                 <th>Sector</th>
+                <th>Price (TradingView)</th>
                 <th>Sentiment</th>
                 <th>Weight</th>
                 <th>vs. 5% start</th>
@@ -206,28 +213,60 @@ export function IndexLab({ data }: { data: Dashboard }) {
                   (a, b) =>
                     Math.abs(b.weight - 0.05) - Math.abs(a.weight - 0.05),
                 )
-                .map((h) => (
-                  <tr
-                    key={h.ticker}
-                    className={selected === h.ticker ? "selected-row" : ""}
-                  >
-                    <td>
-                      <button
-                        className="stock-button"
-                        onClick={() => setSelected(h.ticker)}
-                        style={{ display: "inline-flex", alignItems: "center", gap: 10 }}
-                      >
-                        <StockLogo ticker={h.ticker} size={22} />
-                        <span>
-                          <b>{h.ticker}</b>
-                          <small>{h.name}</small>
-                        </span>
-                      </button>
-                    </td>
-                    <td className="muted">{h.sector}</td>
-                    <td className={sentimentTone(h.sentiment)}>
-                      {signed(h.sentiment)}
-                    </td>
+                .map((h) => {
+                  const q = quotes?.stocks[h.ticker];
+                  return (
+                    <tr
+                      key={h.ticker}
+                      className={selected === h.ticker ? "selected-row" : ""}
+                    >
+                      <td>
+                        <button
+                          className="stock-button"
+                          onClick={() => setSelected(h.ticker)}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 10,
+                          }}
+                        >
+                          <StockLogo ticker={h.ticker} size={22} />
+                          <span>
+                            <b>{h.ticker}</b>
+                            <small>{h.name}</small>
+                          </span>
+                        </button>
+                      </td>
+                      <td className="muted">{h.sector}</td>
+                      <td>
+                        {q ? (
+                          <div>
+                            <b style={{ fontVariantNumeric: "tabular-nums" }}>
+                              ${q.price.toFixed(2)}
+                            </b>
+                            <small
+                              style={{
+                                display: "block",
+                                fontSize: 10.5,
+                                fontWeight: 600,
+                                color:
+                                  q.changePct >= 0
+                                    ? "var(--green)"
+                                    : "var(--red)",
+                                fontVariantNumeric: "tabular-nums",
+                              }}
+                            >
+                              {q.changePct >= 0 ? "+" : ""}
+                              {q.changePct}%
+                            </small>
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
+                      <td className={sentimentTone(h.sentiment)}>
+                        {signed(h.sentiment)}
+                      </td>
                     <td>
                       <div className="weight-cell">
                         <b>{percent(h.weight, 2)}</b>
@@ -241,7 +280,8 @@ export function IndexLab({ data }: { data: Dashboard }) {
                     </td>
                     <td>{h.signalCount}</td>
                   </tr>
-                ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
