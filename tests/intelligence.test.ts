@@ -63,8 +63,9 @@ describe("connected risk intelligence", () => {
       [source],
     );
     expect(second.duplicateOf).toBe("first");
-    expect(rebalance([source, second]).weights).toEqual(
-      rebalance([source]).weights,
+    const now = Date.parse(source.publishedAt);
+    expect(rebalance([source, second], equalWeights(), now).weights).toEqual(
+      rebalance([source], equalWeights(), now).weights,
     );
     expect(
       annotateNovelty(
