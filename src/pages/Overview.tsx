@@ -73,7 +73,7 @@ export function Overview({
           <strong>{latestStress ? money(latestStress.pnl) : "—"}</strong>
           <p>
             {latestStress
-              ? `${latestStress.event} · hypothetical P&L`
+              ? `${latestStress.event} · ${latestStress.analysisVersion ? "hypothetical P&L" : "historical result"}`
               : "Waiting for a high-impact event"}
           </p>
         </div>
@@ -113,7 +113,8 @@ export function Overview({
             <div className="section-title">
               <h2>Source check</h2>
               <span className="tag">
-                {active}/{data.sources.length} connected
+                {active}/{data.sources.length}{" "}
+                {data.mode === "demo" ? "ready" : "connected"}
               </span>
             </div>
             {data.sources.map((s) => (
@@ -125,7 +126,7 @@ export function Overview({
                     {s.error ??
                       (s.status === "idle"
                         ? "Ready to fetch"
-                        : `${s.fetched} records in last fetch`)}
+                        : `${s.fetched} records ${data.mode === "demo" ? "in workspace" : "in last fetch"}`)}
                   </small>
                 </div>
                 <span className="tag">{s.kind}</span>
