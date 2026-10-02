@@ -1711,7 +1711,234 @@ dialog::backdrop {
 .weight-cell {
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.weight-cell > div {
+  width: 60px;
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.weight-cell > div > i {
+  display: block;
+  height: 100%;
+  background: #2563eb;
+  border-radius: 3px;
+}
+
+/* Stress Studio & Model Lab Styling */
+.value-bridge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin-bottom: 14px;
+}
+
+.value-bridge.pending {
+  opacity: 0.6;
+}
+
+.value-bridge > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.value-bridge span {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.value-bridge strong {
+  font-size: 22px;
+  font-weight: 750;
+  color: var(--text-main);
+  letter-spacing: -0.4px;
+}
+
+.pnl-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+  font-size: 12.5px;
+  border: 1px solid var(--line);
+}
+
+.pnl-banner span {
+  font-weight: 600;
+}
+
+.pnl-banner b {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.pnl-banner.positive {
+  background: var(--green-bg);
+  border-color: #a7f3d0;
+  color: var(--green);
+}
+
+.pnl-banner.negative {
+  background: var(--red-bg);
+  border-color: #fecaca;
+  color: var(--red);
+}
+
+.pnl-banner.neutral {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--text-main);
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.history-row:hover {
+  background: var(--surface);
+  border-color: #94a3b8;
+}
+
+.history-row.chosen {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.history-row span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.saved-trigger {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+}
+
+.asset-id-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 22px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-main);
+  flex-shrink: 0;
+}
+
+.tag.tag-asset-equity {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+  font-weight: 600;
+}
+
+.tag.tag-asset-bond {
+  background: #faf5ff;
+  color: #7e22ce;
+  border-color: #e9d5ff;
+  font-weight: 600;
+}
+
+.tag.tag-asset-loan {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+  font-weight: 600;
+}
+
+.tag.tag-asset-derivative {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fde68a;
+  font-weight: 600;
+}
+
+tr.selected-row td {
+  background: #eff6ff !important;
+}
+
+.model-score {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.model-score-track {
+  width: 54px;
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.model-score-track i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.benchmark {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin: 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.benchmark > div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.benchmark > i {
+  display: block;
+  height: 7px;
+  background: #2563eb;
+  border-radius: 4px;
+}
+
+.benchmark > i.baseline {
+  background: #94a3b8;
 }
 
 /* Responsive Media Queries */
