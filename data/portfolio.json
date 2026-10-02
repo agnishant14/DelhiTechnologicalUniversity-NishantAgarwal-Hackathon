@@ -1,0 +1,9 @@
+[
+  {"id":"L1","name":"Technology term loans","type":"Loan","sector":"Technology","value":25,"duration":1.5,"spreadDuration":3,"equityBeta":0,"fxExposure":0,"rateDv01":0},
+  {"id":"L2","name":"Consumer revolving loans","type":"Loan","sector":"Consumer","value":15,"duration":0.5,"spreadDuration":2,"equityBeta":0,"fxExposure":0,"rateDv01":0},
+  {"id":"B1","name":"Investment-grade corporate bonds","type":"Bond","sector":"Diversified","value":20,"duration":5,"spreadDuration":4.5,"equityBeta":0,"fxExposure":0,"rateDv01":0},
+  {"id":"B2","name":"USD sovereign bonds","type":"Bond","sector":"Government","value":10,"duration":7,"spreadDuration":0,"equityBeta":0,"fxExposure":0,"rateDv01":0},
+  {"id":"E1","name":"US large-cap equities","type":"Equity","sector":"Diversified","value":18,"duration":0,"spreadDuration":0,"equityBeta":1.1,"fxExposure":0,"rateDv01":0},
+  {"id":"D1","name":"Receive-fixed interest rate swaps","type":"Derivative","sector":"Rates","value":7,"duration":0,"spreadDuration":0,"equityBeta":0,"fxExposure":0,"rateDv01":-0.012},
+  {"id":"D2","name":"Long foreign-currency forwards","type":"Derivative","sector":"FX","value":5,"duration":0,"spreadDuration":0,"equityBeta":0,"fxExposure":20,"rateDv01":0}
+]
