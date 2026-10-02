@@ -81,6 +81,28 @@ describe("risk signals", () => {
     expect(detectTickers("The metadata is available.")).toEqual([]);
     expect(detectTickers("J.P. Morgan sees growth.")).toEqual(["JPM"]);
   });
+  it("does not let recovery wording hide an unresolved or separate adverse event", () => {
+    expect(classifyEvent("Apple cannot avoid bankruptcy", -0.8)).toMatchObject({
+      creditContext: "reported",
+      impact: 10,
+    });
+    expect(
+      classifyEvent("Apple failed to prevent bankruptcy", -0.8),
+    ).toMatchObject({ creditContext: "reported", impact: 10 });
+    expect(classifyEvent("Apple did not deny bankruptcy", -0.8)).toMatchObject({
+      creditContext: "uncertain",
+      impact: 7,
+    });
+    expect(
+      classifyEvent(
+        "Apple denies bankruptcy but a military invasion disrupts chip supplies",
+        -0.8,
+      ),
+    ).toMatchObject({ event: "Geopolitical", impact: 10 });
+    expect(
+      classifyEvent("Apple avoids bankruptcy and reports record earnings", 0.8),
+    ).toMatchObject({ event: "Earnings", impact: 5 });
+  });
   it("prioritizes credit and geopolitical events and limits severity", () => {
     expect(
       classifyEvent("Company bankruptcy causes a massive crisis", -1),

@@ -123,18 +123,31 @@ function creditContext(text: string): Signal["creditContext"] {
         /\b(?:no|without)\s+(?:(?:risk|signs|evidence|of|any|a)\s+){0,4}$/i.test(
           before,
         ) ||
-        /\b(?:avoid(?:s|ed|ing)?|avert(?:s|ed)?|prevent(?:s|ed)?|den(?:y|ies|ied)|dismiss(?:es|ed)?|ruled? out|emerg(?:e[sd]?|ing) from|exit(?:s|ed)?)\s+(?:\w+\s+){0,4}$/i.test(
+        /\b(?:avoid(?:s|ed|ing)?|avert(?:s|ed)?|prevent(?:s|ed)?|den(?:y|ies|ied)|dismiss(?:es|ed)?|ruled? out|emerg(?:e[sd]?|ing) from|exit(?:s|ed)?)\s+(?:(?:a|the|its|any|risk|of|claims?|reports?|rumou?rs?|that|it|is|was|possible|potential)\s+){0,6}$/i.test(
           before,
         ) ||
         /^\s+(?:(?:rumou?rs?|fears?|was|is|has|have|been|were|are)\s+){0,4}(?:denied|dismissed|averted|avoided|ruled out|unfounded|false)\b/i.test(
           after,
         );
+      const failedPrevention =
+        /\b(?:cannot|can['’]t|could not|couldn['’]t|unable to|fail(?:s|ed)? to|not)\s+(?:avoid|avert|prevent)\b[^.!?;]*$/i.test(
+          before,
+        );
+      const negatedDenial =
+        /\b(?:not|didn['’]t|doesn['’]t)\s+(?:deny|dismiss|rule out)\b[^.!?;]*$/i.test(
+          before,
+        );
       const uncertain =
+        negatedDenial ||
         /\b(?:may|might|could|if|risk|risks|fears?|rumou?rs?|unconfirmed|potential|possible|speculat\w*)\b/i.test(
           clause,
         );
       contexts.push(
-        negated ? "negated or resolved" : uncertain ? "uncertain" : "reported",
+        negated && !failedPrevention && !negatedDenial
+          ? "negated or resolved"
+          : uncertain
+            ? "uncertain"
+            : "reported",
       );
     }
   }
@@ -157,7 +170,12 @@ export function classifyEvent(
       ...new Set((text.match(rule.pattern) ?? []).map((s) => s.toLowerCase())),
     ],
   }));
-  const selected = matches.find((rule) => rule.terms.length > 0);
+  const selected =
+    matches.find(
+      (rule) =>
+        rule.terms.length > 0 &&
+        !(rule.event === "Credit Event" && credit === "negated or resolved"),
+    ) ?? matches.find((rule) => rule.terms.length > 0);
   const mapped =
     topic && !topic.needsReview ? TOPIC_EVENTS[topic.label] : undefined;
   const priority =
@@ -170,7 +188,9 @@ export function classifyEvent(
     !priority && mapped ? "topic model" : selected ? "explicit cue" : "review";
   const severe =
     /\b(bankrupt(?:cy)?|invasion|crisis|collapse|nationwide|massive|default(?:s|ed)?)\b/i.test(
-      text,
+      credit === "negated or resolved"
+        ? text.replace(RULES[0].pattern, "")
+        : text,
     );
   const uncertain =
     /\b(rumou?r|unconfirmed|might|may|could|speculat\w*)\b/i.test(text);

@@ -1,4 +1,4 @@
-export const ANALYSIS_VERSION = "2.1";
+export const ANALYSIS_VERSION = "2.2";
 export const STOCKS = [
   {
     ticker: "AAPL",
