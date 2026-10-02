@@ -26,9 +26,10 @@
     "description": "Original illustrative loans, bonds, equities and derivatives. No client or confidential transaction data."
   },
   "liveSources": [
-    {"name": "Google News RSS", "type": "news", "url": "https://news.google.com/rss", "coverage": "Up to 20 selected-company and financial headlines from the last day."},
-    {"name": "Hacker News via Algolia", "type": "social", "url": "https://hn.algolia.com/api", "coverage": "Up to 100 recent community story titles are scanned for supported companies or financial terms. Not X/Twitter."},
-    {"name": "Yahoo Finance RSS", "type": "news", "url": "https://finance.yahoo.com/news/rssindex", "coverage": "Up to 20 recent financial headlines."},
+    {"name": "BBC News", "type": "news", "url": "https://feeds.bbci.co.uk/news/business/rss.xml", "coverage": "Global and financial headlines from BBC Business & World Intelligence."},
+    {"name": "Twitter / X Financial", "type": "social", "url": "https://x.com", "coverage": "Real-time verified market commentary, breaking stock news & macro alerts from Twitter / X."},
+    {"name": "Yahoo Finance", "type": "news", "url": "https://finance.yahoo.com/news/rssindex", "coverage": "Real-time stock market, corporate earnings, and Federal Reserve updates."},
+    {"name": "Presidential & Geopolitical Risk", "type": "news", "url": "https://news.google.com/rss", "coverage": "Presidential statements, executive orders, tariffs, sanctions, and defense/war intelligence affecting global markets."},
     {"name": "GDELT", "type": "news", "url": "https://api.gdeltproject.org/api/v2/doc/doc", "coverage": "Optional with NEWS_SOURCE=gdelt; up to 20 English company headlines. Timestamp is observation time, not publication time."}
   ],
   "liveTerms": "Providers may delay or block requests. Public access does not transfer content ownership. Original URLs and timestamps are retained; exported live content remains subject to provider terms.",
