@@ -1,86 +1,43 @@
 {
+  "training": {
+    "name": "zeroshot/twitter-financial-news-topic",
+    "url": "https://huggingface.co/datasets/zeroshot/twitter-financial-news-topic",
+    "revision": "acbc8af2a35ccf0916124efcbe9e6cf25f191012",
+    "files": ["data/training/train.csv.gz", "data/training/validation.csv.gz"],
+    "license": "MIT according to the upstream dataset card; see data/training/SOURCE.md",
+    "nature": "Public annotated English financial posts; historical, not a live feed.",
+    "processing": "URLs removed for feature extraction; normalized exact duplicates and train/validation overlap removed. Pinned corpus checksums and measured results are in models/metrics.json."
+  },
   "demo": {
     "path": "data/demo.json",
     "type": "synthetic",
-    "records": 24,
-    "newsRecords": 17,
-    "socialRecords": 7,
-    "description": "Original fictional scenarios created for this prototype with AI assistance.",
-    "license": "MIT",
-    "timestamps": "Generated at runtime, one minute apart from the saved demo anchor. They are simulation times, not historical publication dates."
+    "records": 6,
+    "newsRecords": 5,
+    "socialRecords": 1,
+    "description": "Fictional headlines created with AI assistance for repeatable demonstrations. Not used to train or evaluate the model.",
+    "timestamps": "Simulation times generated at runtime."
   },
-  "largeDataset": {
-    "path": "data/financial_dataset.json",
-    "type": "multi-source-benchmark",
-    "records": 923,
-    "sources": [
-      {
-        "name": "zeroshot/twitter-financial-news-sentiment",
-        "platform": "Hugging Face",
-        "url": "https://huggingface.co/datasets/zeroshot/twitter-financial-news-sentiment",
-        "records": 399,
-        "type": "social"
-      },
-      {
-        "name": "ashraq/financial-news",
-        "platform": "Hugging Face",
-        "url": "https://huggingface.co/datasets/ashraq/financial-news",
-        "records": 300,
-        "type": "news"
-      },
-      {
-        "name": "Jean-Baptiste/financial_news_sentiment",
-        "platform": "Hugging Face",
-        "url": "https://huggingface.co/datasets/Jean-Baptiste/financial_news_sentiment",
-        "records": 200,
-        "type": "news"
-      },
-      {
-        "name": "kaggle/financial-news-headlines",
-        "platform": "Kaggle",
-        "url": "https://www.kaggle.com/datasets/ankurzing/sentiment-analysis-for-financial-news",
-        "records": 24,
-        "type": "news"
-      }
-    ],
-    "description": "Comprehensive multi-source financial benchmark dataset extracted from Hugging Face and Kaggle covering the 20 S&P 100 constituents, earnings reports, regulatory decisions, central bank releases, and credit events."
+  "portfolio": {
+    "path": "data/portfolio.json",
+    "type": "synthetic",
+    "records": 7,
+    "valueUsdMillions": 100,
+    "units": "value and fxExposure in USD millions; duration and spreadDuration in years; rateDv01 in signed USD millions per basis point; equityBeta dimensionless.",
+    "description": "Original illustrative loans, bonds, equities and derivatives. No client or confidential transaction data."
   },
   "liveSources": [
-    {
-      "name": "Google News RSS",
-      "type": "news",
-      "url": "https://news.google.com/rss",
-      "adapter": "server/sources.ts",
-      "use": "Default news source; public headline text, source URL and publication time.",
-      "coverage": "Selected index companies and financial terms in the last day.",
-      "access": "No API key required. Upstream provider terms apply."
-    },
-    {
-      "name": "Hacker News via Algolia",
-      "type": "social",
-      "url": "https://hn.algolia.com/api",
-      "adapter": "server/sources.ts",
-      "use": "Public community-submitted story titles, post URLs and timestamps.",
-      "coverage": "NVIDIA-related stories in the last day.",
-      "access": "No API key required. Upstream provider terms apply."
-    },
-    {
-      "name": "GDELT",
-      "type": "news",
-      "url": "https://api.gdeltproject.org/api/v2/doc/doc",
-      "adapter": "server/sources.ts",
-      "use": "Optional news adapter enabled with NEWS_SOURCE=gdelt.",
-      "coverage": "English headlines mentioning selected index companies in the last day.",
-      "timestamps": "Uses GDELT observation time, not a separate publication timestamp.",
-      "access": "No API key required. Upstream provider terms apply."
-    }
+    {"name": "Google News RSS", "type": "news", "url": "https://news.google.com/rss", "coverage": "Up to 20 selected-company and financial headlines from the last day."},
+    {"name": "Hacker News via Algolia", "type": "social", "url": "https://hn.algolia.com/api", "coverage": "Up to 100 recent community story titles are scanned for supported companies or financial terms. Not X/Twitter."},
+    {"name": "Yahoo Finance RSS", "type": "news", "url": "https://finance.yahoo.com/news/rssindex", "coverage": "Up to 20 recent financial headlines."},
+    {"name": "GDELT", "type": "news", "url": "https://api.gdeltproject.org/api/v2/doc/doc", "coverage": "Optional with NEWS_SOURCE=gdelt; up to 20 English company headlines. Timestamp is observation time, not publication time."}
   ],
-  "model": {
+  "liveTerms": "Providers may delay or block requests. Public access does not transfer content ownership. Original URLs and timestamps are retained; exported live content remains subject to provider terms.",
+  "sentimentModel": {
     "name": "Xenova/finbert",
     "url": "https://huggingface.co/Xenova/finbert",
     "baseModel": "https://huggingface.co/ProsusAI/finbert",
     "revision": "8f269abebfdd9009d7d9b5e96af7e5c6bfe50b20",
-    "use": "Pretrained sentiment inference. No model training is performed in this project.",
-    "distribution": "Weights download at runtime and retain their upstream license."
-  }
+    "use": "Pretrained local sentiment inference, first 512 tokens. Weights are downloaded to an ignored cache and retain their upstream license."
+  },
+  "topicModel": {"path": "models/topic.json.gz", "version": "gorisk-topic-v1", "use": "Locally trained TF-IDF and logistic regression; coefficients and vocabulary are bundled for JavaScript inference."}
 }
