@@ -270,3 +270,33 @@ export interface PreviewResult {
   turnover: number;
   stress: StressResult;
 }
+
+export interface StockQuote {
+  ticker: Ticker | string;
+  name: string;
+  symbol: string;
+  price: number;
+  changePct: number;
+  changeAbs: number;
+  volume: number;
+  open: number;
+  high: number;
+  low: number;
+  perf1M: number;
+  perf3M: number;
+  history: { time: string; price: number }[];
+  updatedAt: string;
+}
+
+export interface QuotesPayload {
+  source: "tradingview";
+  updatedAt: string;
+  stocks: Record<string, StockQuote>;
+  indices: {
+    name: string;
+    symbol: string;
+    val: string;
+    delta: string;
+    positive: boolean;
+  }[];
+}
