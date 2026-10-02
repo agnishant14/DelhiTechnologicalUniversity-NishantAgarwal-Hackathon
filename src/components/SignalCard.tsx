@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import type { Signal } from "../../shared/types";
 import { ago, percent, signed, tone } from "../lib/api";
+import { StockLogo } from "../StockLogo";
 
 export function SignalCard({
   signal,
@@ -48,7 +49,12 @@ export function SignalCard({
           <span className="tag">{signal.creditContext}</span>
         )}
         {signal.tickers.map((ticker) => (
-          <span className="ticker-tag" key={ticker}>
+          <span
+            className="ticker-tag"
+            key={ticker}
+            style={{ display: "inline-flex", alignItems: "center", gap: 5 }}
+          >
+            <StockLogo ticker={ticker} size={15} />
             {ticker}
           </span>
         ))}
@@ -122,16 +128,19 @@ export function SignalCard({
           {signal.companySentiments && signal.companySentiments.length > 1 && (
             <div className="company-scores">
               {signal.companySentiments.map((c) => (
-                <div key={c.ticker}>
-                  <b>
-                    {c.ticker}{" "}
-                    <span className={tone(c.sentiment)}>
-                      {signed(c.sentiment)}
+                <div key={c.ticker} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <StockLogo ticker={c.ticker} size={18} />
+                  <div>
+                    <b>
+                      {c.ticker}{" "}
+                      <span className={tone(c.sentiment)}>
+                        {signed(c.sentiment)}
+                      </span>
+                    </b>
+                    <span className="small muted">
+                      {" "}· {c.scope} · {c.text}
                     </span>
-                  </b>
-                  <span className="small muted">
-                    {c.scope} · {c.text}
-                  </span>
+                  </div>
                 </div>
               ))}
             </div>
