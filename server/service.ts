@@ -8,9 +8,12 @@ import {
 } from "../shared/types";
 import { RiskEngine, signalId } from "./engine";
 import { Store } from "./store";
-import { equalWeights, holdings, POLICY, rebalance } from "./portfolio";
+import { equalWeights, holdings, POLICY, rebalance, validWeights } from "./portfolio";
 import { demoDocument, SCENARIOS } from "./demo";
-import { fetchSources, gdeltSource, sources, defaultSources, type Source } from "./sources";
+import { fetchSources, defaultSources, type Source } from "./sources";
+import { annotateNovelty } from "./novelty";
+import { ASSETS, PRESETS, runStress } from "./stress";
+import type { StressResult, StressDashboard, PreviewResult } from "../shared/intelligence";
 import { predictMarketFlow } from "./flow";
 import { documentSchema } from "./validation";
 
@@ -34,7 +37,7 @@ export class RiskService {
     public store: Store,
     adapters?: Source[],
   ) {
-    this.mode = store.get("mode") === "live" ? "live" : "demo";
+    this.mode = store.get("mode") === "demo" ? "demo" : "live";
     this.adapters = adapters ?? defaultSources;
     this.lastRefresh = Number(store.get("lastRefresh") ?? 0);
     const savedStatuses: SourceStatus[] = JSON.parse(
@@ -67,7 +70,8 @@ export class RiskService {
   async initialize() {
     await this.engine.initialize();
     for (const mode of ["demo", "live"] as const) {
-      if (!this.store.history(mode).length)
+      const latest = this.store.history(mode).at(-1);
+      if (!latest || !validWeights(latest.weights))
         this.store.save([], {
           id: randomUUID(),
           mode,
@@ -81,8 +85,6 @@ export class RiskService {
       this.store.save([], undefined, {
         demoAnchor: String(Date.now() - 30 * 60_000),
       });
-    if (!this.store.get("replayPosition"))
-      for (let i = 0; i < 6; i++) await this.replayBatch();
     this.ready = true;
   }
   private async ingest(
@@ -97,10 +99,11 @@ export class RiskService {
       if (!parsed.success) continue;
       const id = signalId(parsed.data.text, mode);
       if (this.store.has(id) || batch.has(id)) continue;
-      const signal = await this.engine.analyze(
+      const analyzed = await this.engine.analyze(
         { ...parsed.data, isSample: doc.isSample ?? false },
         mode,
       );
+      const signal = annotateNovelty(analyzed, [...this.store.signals(mode), ...added]);
       if (this.store.has(signal.id) || batch.has(signal.id)) continue;
       added.push(signal);
       batch.add(signal.id);
@@ -108,21 +111,27 @@ export class RiskService {
     const previous = this.store.history(mode).at(-1)?.weights ?? equalWeights();
     const eligible = added.some(
       (s) =>
+        !s.duplicateOf &&
         s.tickers.length &&
         Date.parse(s.publishedAt) <= Date.now() &&
         Date.now() - Date.parse(s.publishedAt) <=
           POLICY.lookbackHours * 3600000,
     );
-    const snapshot = eligible
+    const decaying = !added.length && mode === "live";
+    const snapshot = eligible || decaying
       ? {
           id: randomUUID(),
           mode,
           timestamp: new Date().toISOString(),
           ...rebalance([...this.store.signals(mode), ...added], previous),
-          reason: `${added.length} new signal${added.length === 1 ? "" : "s"}`,
+          reason: decaying ? "Refresh signal decay" : `${added.length} new signal${added.length === 1 ? "" : "s"}`,
         }
       : undefined;
-    this.store.save(added, snapshot, metadata);
+    const stressHistory = this.stress(mode).history;
+    const triggered = added.filter((s) => !s.duplicateOf && s.impact > 7 && Date.now() - Date.parse(s.publishedAt) <= 24 * 3600000 && Date.parse(s.publishedAt) <= Date.now())
+      .map((s) => runStress(s.event, s.impact, mode, undefined, s));
+    if (triggered.length) metadata[`stress:${mode}`] = JSON.stringify([...triggered, ...stressHistory].slice(0, 100));
+    this.store.save(added, snapshot && snapshot.turnover > 1e-6 ? snapshot : undefined, metadata);
     return added;
   }
   private async replayBatch() {
@@ -156,6 +165,22 @@ export class RiskService {
     return this.exclusive(async () => {
       this.store.save([], undefined, { mode });
       this.mode = mode;
+      if (mode === "demo" && !this.store.get("replayPosition")) await this.replayBatch();
+    });
+  }
+  stress(mode: Mode = this.mode): StressDashboard {
+    return { assets: ASSETS, totalValue: ASSETS.reduce((s, a) => s + a.value, 0), presets: PRESETS,
+      history: JSON.parse(this.store.get(`stress:${mode}`) ?? "[]") as StressResult[] };
+  }
+  async preview(text: string): Promise<PreviewResult> {
+    this.checkReady();
+    return this.exclusive(async () => {
+      const previous = this.store.history(this.mode).at(-1)?.weights ?? equalWeights();
+      const current = this.store.signals(this.mode);
+      const signal = annotateNovelty(await this.engine.analyze({ text, sourceKind: "manual", sourceName: "What-if sandbox", publishedAt: new Date().toISOString(), isSample: true }, this.mode), current);
+      const combined = [...current.filter((s) => s.id !== signal.id), signal];
+      const { weights, turnover } = rebalance(combined, previous);
+      return { signal, holdings: holdings(combined, weights, previous), turnover, stress: runStress(signal.event, signal.impact, this.mode) };
     });
   }
   async refresh() {
